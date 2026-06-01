@@ -99,8 +99,12 @@ In den **Vercel-Projekt-Einstellungen → Environment Variables** setzen:
 Danach **Redeploy** auslösen. Die App läuft vollständig unter deiner `…vercel.app`-URL –
 kein zweiter Dienst, kein `VITE_API_URL` nötig (Frontend und API teilen sich die Domain).
 
-> Das Schema wird beim ersten Aufruf automatisch angelegt. Beispieldaten optional per
-> `DB_URL=… DB_AUTH_TOKEN=… npm run seed` von lokal aus einspielen.
+> Das Schema wird beim ersten Aufruf automatisch angelegt; ist die DB leer, werden
+> Demo-Daten geladen (abschaltbar via `SEED_ON_EMPTY=0`).
+>
+> **Ohne `DB_URL`** läuft die App auf Vercel in einem **flüchtigen Demo-Modus**
+> (In-Memory-Datenbank): alles funktioniert sofort, aber Daten verschwinden beim
+> nächsten Kaltstart. Erst mit Turso (`DB_URL` + `DB_AUTH_TOKEN`) bleiben sie dauerhaft.
 
 ## Hinweis
 

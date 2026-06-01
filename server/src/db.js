@@ -2,7 +2,9 @@
 // in Produktion (Vercel): Turso über DB_URL + DB_AUTH_TOKEN – gleiche API.
 import { createClient } from '@libsql/client';
 
-const url = process.env.DB_URL || 'file:pflege.db';
+// Reihenfolge: explizit gesetzte DB_URL (Turso, dauerhaft) > Vercel ohne DB
+// (In-Memory, läuft sofort mit Demo-Daten, aber flüchtig) > lokal (Datei).
+const url = process.env.DB_URL || (process.env.VERCEL ? ':memory:' : 'file:pflege.db');
 const authToken = process.env.DB_AUTH_TOKEN;
 
 export const client = createClient(authToken ? { url, authToken } : { url });
