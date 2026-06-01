@@ -18,6 +18,7 @@ export default function App() {
   const [patienten, setPatienten] = useState([]);
   const [vermittlungen, setVermittlungen] = useState([]);
   const [fehler, setFehler] = useState(null);
+  const [backendAus, setBackendAus] = useState(false);
 
   const laden = useCallback(async () => {
     try {
@@ -26,8 +27,10 @@ export default function App() {
       setPatienten(a);
       setVermittlungen(v);
       setFehler(null);
+      setBackendAus(false);
     } catch (e) {
-      setFehler(e.message);
+      // Kein Backend erreichbar -> freundlicher Hinweis statt rohem Fehler
+      setBackendAus(true);
     }
   }, []);
 
@@ -54,6 +57,17 @@ export default function App() {
         </nav>
       </header>
 
+      {backendAus && (
+        <div className="banner warn">
+          🔌 <b>Kein Backend verbunden.</b> Das Frontend läuft, aber die Datenbank/API ist noch nicht angebunden –
+          du kannst dich umsehen, aber noch keine Daten laden oder speichern.
+          <br />
+          <span className="small">
+            Lösung: Backend auf Render starten und in den Vercel-Einstellungen <code>VITE_API_URL</code> auf die
+            Backend-URL setzen, dann neu deployen (siehe README).
+          </span>
+        </div>
+      )}
       {fehler && <div className="banner error">⚠ {fehler}</div>}
 
       <main className="content">

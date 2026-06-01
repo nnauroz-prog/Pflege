@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { api } from './api.js';
-import { LEAD_STATUS, KATEGORIE_ICON, QUALIFIKATIONEN, LEISTUNGEN, DRINGLICHKEIT } from './constants.js';
+import { LEAD_STATUS, KATEGORIE_ICON, KATEGORIEN_AKQUISE, QUALIFIKATIONEN, LEISTUNGEN, DRINGLICHKEIT } from './constants.js';
 import { CheckboxGroup, Field } from './components.jsx';
 import MapView from './MapView.jsx';
 
 export default function Akquise({ setFehler }) {
-  const [kategorien, setKategorien] = useState([]);
+  const kategorien = KATEGORIEN_AKQUISE; // lokal – kein Backend nötig fürs Formular
   const [form, setForm] = useState({ ort: '', radius_km: 10, kategorien: [] });
   const [center, setCenter] = useState(null);
   const [leads, setLeads] = useState([]);
@@ -16,10 +16,6 @@ export default function Akquise({ setFehler }) {
   const [laden, setLaden] = useState(false);
   const [patientFor, setPatientFor] = useState(null); // Lead, für den ein Patient aufgenommen wird
 
-  useEffect(() => {
-    api.akquiseKategorien().then(setKategorien).catch((e) => setFehler(e.message));
-  }, [setFehler]);
-
   const ladeListe = useCallback(async () => {
     const [l, s] = await Promise.all([api.akquiseLeads(filter), api.akquiseStats()]);
     setLeads(l);
@@ -27,8 +23,9 @@ export default function Akquise({ setFehler }) {
   }, [filter]);
 
   useEffect(() => {
-    ladeListe().catch((e) => setFehler(e.message));
-  }, [ladeListe, setFehler]);
+    // Erstes Laden still – fehlendes Backend meldet die App-Ebene zentral.
+    ladeListe().catch(() => {});
+  }, [ladeListe]);
 
   const suchen = async (e) => {
     e.preventDefault();
