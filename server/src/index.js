@@ -8,6 +8,7 @@ import './db.js';
 import caregivers from './routes/caregivers.js';
 import patients from './routes/patients.js';
 import vermittlungen from './routes/vermittlungen.js';
+import akquise from './routes/akquise.js';
 import { db } from './db.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -30,6 +31,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/caregivers', caregivers);
 app.use('/api/patients', patients);
 app.use('/api/vermittlungen', vermittlungen);
+app.use('/api/akquise', akquise);
 
 // Gebautes Frontend ausliefern (Produktion)
 const clientDist = join(__dirname, '..', '..', 'client', 'dist');

@@ -1,4 +1,6 @@
-const BASE = '/api';
+// Standard: gleiches Origin (lokal/Single-Host). Für getrenntes Hosting
+// VITE_API_URL beim Build setzen, z. B. https://mein-backend.example.com
+const BASE = (import.meta.env?.VITE_API_URL || '') + '/api';
 
 async function req(path, opts = {}) {
   const res = await fetch(BASE + path, {
@@ -34,4 +36,15 @@ export const api = {
   createVermittlung: (caregiver_id, patient_id) =>
     req('/vermittlungen', { method: 'POST', body: JSON.stringify({ caregiver_id, patient_id }) }),
   deleteVermittlung: (id) => req(`/vermittlungen/${id}`, { method: 'DELETE' }),
+
+  akquiseKategorien: () => req('/akquise/kategorien'),
+  akquiseSuche: (data) => req('/akquise/suche', { method: 'POST', body: JSON.stringify(data) }),
+  akquiseLeads: (params = {}) => {
+    const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
+    return req('/akquise/leads' + (q ? `?${q}` : ''));
+  },
+  akquiseRoute: (lat, lon, limit = 12) => req(`/akquise/route?lat=${lat}&lon=${lon}&limit=${limit}`),
+  akquiseStats: () => req('/akquise/stats'),
+  updateLead: (id, data) => req(`/akquise/leads/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteLead: (id) => req(`/akquise/leads/${id}`, { method: 'DELETE' }),
 };

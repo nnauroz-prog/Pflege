@@ -41,6 +41,28 @@ db.exec(`
     erstellt_am TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS leads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    kategorie TEXT NOT NULL,                 -- siehe akquise/categories.js
+    adresse TEXT DEFAULT '',
+    plz TEXT DEFAULT '',
+    stadt TEXT DEFAULT '',
+    lat REAL,
+    lon REAL,
+    telefon TEXT DEFAULT '',
+    website TEXT DEFAULT '',
+    distanz_km REAL DEFAULT 0,
+    potenzial_score INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'neu',       -- neu | kontaktiert | termin | gewonnen | kein_interesse
+    zustaendig TEXT DEFAULT '',               -- Teammitglied
+    notiz TEXT DEFAULT '',
+    quelle TEXT DEFAULT 'demo',               -- osm | demo
+    gebiet TEXT DEFAULT '',                   -- Such-Einsatzgebiet
+    erstellt_am TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(name, lat, lon)
+  );
+
   CREATE TABLE IF NOT EXISTS vermittlungen (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     caregiver_id INTEGER NOT NULL,

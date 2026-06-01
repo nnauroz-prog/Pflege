@@ -22,3 +22,21 @@ export const DRINGLICHKEIT = [
 ];
 
 export const qualiLabel = (v) => QUALIFIKATIONEN.find((q) => q.value === v)?.label || v;
+
+export const LEAD_STATUS = [
+  { value: 'neu', label: 'Neu' },
+  { value: 'kontaktiert', label: 'Kontaktiert' },
+  { value: 'termin', label: 'Termin' },
+  { value: 'gewonnen', label: 'Gewonnen' },
+  { value: 'kein_interesse', label: 'Kein Interesse' },
+];
+
+export const KATEGORIE_ICON = {
+  krankenhaus: '🏥',
+  seniorenheim: '🏡',
+  hausarzt: '🩺',
+  sanitaetshaus: '🦽',
+  apotheke: '💊',
+  physiotherapie: '🤸',
+  pflegestuetzpunkt: 'ℹ️',
+};

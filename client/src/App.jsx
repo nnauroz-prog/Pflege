@@ -2,9 +2,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { api } from './api.js';
 import { QUALIFIKATIONEN, LEISTUNGEN, DRINGLICHKEIT, qualiLabel } from './constants.js';
 import { ScoreBadge, Chips, CheckboxGroup, Field } from './components.jsx';
+import Akquise from './Akquise.jsx';
 
 const TABS = [
   { id: 'dashboard', label: 'Übersicht' },
+  { id: 'akquise', label: '🔍 Patienten finden' },
   { id: 'vermittlung', label: 'Vermittlung' },
   { id: 'pfleger', label: 'Pfleger (Gesellschafter)' },
   { id: 'anfragen', label: 'Patientenanfragen' },
@@ -56,6 +58,7 @@ export default function App() {
 
       <main className="content">
         {tab === 'dashboard' && <Dashboard pfleger={pfleger} patienten={patienten} vermittlungen={vermittlungen} goto={setTab} />}
+        {tab === 'akquise' && <Akquise setFehler={setFehler} />}
         {tab === 'vermittlung' && <Vermittlung patienten={patienten} reload={laden} setFehler={setFehler} />}
         {tab === 'pfleger' && <PflegerView pfleger={pfleger} reload={laden} setFehler={setFehler} />}
         {tab === 'anfragen' && <AnfragenView patienten={patienten} reload={laden} setFehler={setFehler} />}
