@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { api } from './api.js';
 import { LEISTUNGEN } from './constants.js';
 import { CheckboxGroup, Field } from './components.jsx';
+import AgentDetail from './AgentDetail.jsx';
 
 // Die Kanäle, die man typischerweise schon probiert hat (zum Selbsttest).
 const VERSUCHT_OPTIONEN = [
@@ -127,25 +128,7 @@ export default function Berater({ setFehler }) {
                       </span>
                       <span className="agent-toggle">{offen === k.key ? '▲' : '▼'}</span>
                     </button>
-                    {offen === k.key && (
-                      <div className="agent-body">
-                        {k.hinweise?.length > 0 && (
-                          <div className="agent-hinweis">{k.hinweise.map((h, i) => <div key={i}>💡 {h}</div>)}</div>
-                        )}
-                        <p><b>Warum:</b> {k.warum}</p>
-                        <p><b>Wen ansprechen:</b> {k.ansprechpartner}</p>
-                        <b>Schritt für Schritt:</b>
-                        <ol className="agent-steps">{k.schritte.map((s, i) => <li key={i}>{s}</li>)}</ol>
-                        <div className="vorlage">
-                          <div className="vorlage-kopf">📋 Vorlage: {k.vorlage_typ}
-                            <button className="btn ghost btn-sm" onClick={() => navigator.clipboard?.writeText(k.vorlage)}>kopieren</button>
-                          </div>
-                          <pre>{k.vorlage}</pre>
-                        </div>
-                        <p className="agent-fehler">⚠️ <b>Typische Fehler:</b> {k.fehler}</p>
-                        <p className="muted small">🔁 Rhythmus: {k.rhythmus}</p>
-                      </div>
-                    )}
+                    {offen === k.key && <AgentDetail agent={k} />}
                   </li>
                 ))}
               </ul>

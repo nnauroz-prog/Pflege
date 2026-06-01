@@ -65,8 +65,8 @@ export default function App() {
           du kannst dich umsehen, aber noch keine Daten laden oder speichern.
           <br />
           <span className="small">
-            Lösung: Backend auf Render starten und in den Vercel-Einstellungen <code>VITE_API_URL</code> auf die
-            Backend-URL setzen, dann neu deployen (siehe README).
+            Lösung: In den Vercel-Einstellungen → Environment Variables die Werte <code>DB_URL</code> und
+            <code>DB_AUTH_TOKEN</code> (von turso.tech) setzen und neu deployen. Schritt-für-Schritt im README.
           </span>
         </div>
       )}

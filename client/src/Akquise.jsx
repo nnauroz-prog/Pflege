@@ -3,6 +3,7 @@ import { api } from './api.js';
 import { LEAD_STATUS, KATEGORIE_ICON, KATEGORIEN_AKQUISE, QUALIFIKATIONEN, LEISTUNGEN, DRINGLICHKEIT } from './constants.js';
 import { CheckboxGroup, Field } from './components.jsx';
 import MapView from './MapView.jsx';
+import AgentDetail from './AgentDetail.jsx';
 
 export default function Akquise({ setFehler }) {
   const kategorien = KATEGORIEN_AKQUISE; // lokal – kein Backend nötig fürs Formular
@@ -15,6 +16,8 @@ export default function Akquise({ setFehler }) {
   const [info, setInfo] = useState(null);
   const [laden, setLaden] = useState(false);
   const [patientFor, setPatientFor] = useState(null); // Lead, für den ein Patient aufgenommen wird
+  const [agentByKat, setAgentByKat] = useState({}); // Kanal-Agent je Lead-Kategorie
+  const [stratFor, setStratFor] = useState(null); // Lead-ID mit offenem Strategie-Plan
 
   const ladeListe = useCallback(async () => {
     const [l, s] = await Promise.all([api.akquiseLeads(filter), api.akquiseStats()]);
@@ -26,6 +29,18 @@ export default function Akquise({ setFehler }) {
     // Erstes Laden still – fehlendes Backend meldet die App-Ebene zentral.
     ladeListe().catch(() => {});
   }, [ladeListe]);
+
+  useEffect(() => {
+    // Kanal-Agenten laden und je Zuweiser-Kategorie zuordnen.
+    api
+      .akquiseAgenten()
+      .then((list) => {
+        const m = {};
+        for (const a of list) if (a.kategorie) m[a.kategorie] = a;
+        setAgentByKat(m);
+      })
+      .catch(() => {});
+  }, []);
 
   const suchen = async (e) => {
     e.preventDefault();
@@ -206,7 +221,15 @@ export default function Akquise({ setFehler }) {
                       <input className="assignee" placeholder="Zuständig…" defaultValue={l.zustaendig}
                         onBlur={(e) => e.target.value !== l.zustaendig && setLead(l.id, { zustaendig: e.target.value })} />
                       <button type="button" className="btn primary btn-sm" title="Patientenanfrage von diesem Zuweiser aufnehmen" onClick={() => setPatientFor(l)}>＋ Patient</button>
+                      {agentByKat[l.kategorie] && (
+                        <button type="button" className="btn btn-sm" onClick={() => setStratFor(stratFor === l.id ? null : l.id)}>
+                          📋 So gewinnst du diesen
+                        </button>
+                      )}
                     </div>
+                    {stratFor === l.id && agentByKat[l.kategorie] && (
+                      <AgentDetail agent={agentByKat[l.kategorie]} context={{ ort: l.stadt || l.gebiet }} />
+                    )}
                   </li>
                 ))}
               </ul>

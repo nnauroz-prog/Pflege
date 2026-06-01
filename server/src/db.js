@@ -79,6 +79,15 @@ let bereit;
 export function init() {
   bereit ??= (async () => {
     for (const sql of SCHEMA) await client.execute(sql);
+    // Beim ersten Start mit leerer DB Demo-Daten laden, damit sofort etwas
+    // zu sehen ist (abschaltbar via SEED_ON_EMPTY=0).
+    if (process.env.SEED_ON_EMPTY !== '0') {
+      const n = (await client.execute('SELECT COUNT(*) AS n FROM caregivers')).rows[0].n;
+      if (!n) {
+        const { seedDemo } = await import('./seedData.js');
+        await seedDemo(client);
+      }
+    }
   })();
   return bereit;
 }
