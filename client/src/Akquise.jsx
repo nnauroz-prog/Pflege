@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { api } from './api.js';
 import { LEAD_STATUS, KATEGORIE_ICON, QUALIFIKATIONEN, LEISTUNGEN, DRINGLICHKEIT } from './constants.js';
 import { CheckboxGroup, Field } from './components.jsx';
+import MapView from './MapView.jsx';
 
 export default function Akquise({ setFehler }) {
   const [kategorien, setKategorien] = useState([]);
@@ -131,6 +132,18 @@ export default function Akquise({ setFehler }) {
           <FunnelStep label="Termin" value={stats.termin} tone="termin" />
           <FunnelStep label="Gewonnen" value={stats.gewonnen} tone="gewonnen" />
           <FunnelStep label="Kein Interesse" value={stats.kein_interesse} tone="kein" />
+        </div>
+      )}
+
+      {leads.length > 0 && (
+        <div className="card">
+          <div className="card-head">
+            <h2>🗺️ Karte – Zuweiser im Gebiet</h2>
+            <p className="muted small">Pins nach Status (grau = neu, blau = kontaktiert, orange = Termin, grün = gewonnen). Größe = Potenzial. Linie = Fahrplan.</p>
+          </div>
+          <div className="card-body" style={{ padding: 0 }}>
+            <MapView center={center} leads={leads} route={route} />
+          </div>
         </div>
       )}
 
