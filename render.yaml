@@ -1,0 +1,25 @@
+# Render-Blueprint: ein einziger Web-Dienst, der Frontend UND API ausliefert.
+# Einrichtung: render.com -> "New +" -> "Blueprint" -> dieses Repo wählen.
+# Render liest diese Datei und fragt die zwei Turso-Werte ab (DB_URL, DB_AUTH_TOKEN).
+services:
+  - type: web
+    name: pflegematch
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: claude/caregiver-patient-matching-CZXKN
+    # devDependencies (u. a. vite) MUSS installiert werden, damit der Build läuft:
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: AKQUISE_LIVE
+        value: "1"
+      # Turso (dauerhafte Daten) – Werte im Render-Dashboard eingeben:
+      - key: DB_URL
+        sync: false
+      - key: DB_AUTH_TOKEN
+        sync: false

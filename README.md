@@ -72,39 +72,32 @@ server/   Express-API, SQLite-Schema, Matching-Engine, Seed
 client/   React-Frontend (Dashboard, Vermittlung, Pfleger, Anfragen)
 ```
 
-## Deployment: komplett auf Vercel (mit Turso-Datenbank)
+## Deployment: Render (ein Dienst, empfohlen)
 
-Frontend **und** API laufen auf einer einzigen Vercel-Deployment. Die API liegt als
-Serverless-Funktion unter `api/` (siehe `vercel.json`), die Datenbank ist **Turso**
-(libSQL, SQLite-kompatibel, kostenloser Tarif). Lokal nutzt dieselbe Codebasis eine
-SQLite-Datei.
+Frontend **und** API laufen in **einem** Node-Dienst auf [Render](https://render.com):
+Der Express-Server liefert die gebaute React-App (`client/dist`) **und** die REST-API
+aus. Konfiguration: `render.yaml` (Blueprint).
 
-### 1. Turso-Datenbank anlegen (einmalig)
+### Schritte
+1. Auf [render.com](https://render.com) einloggen → **New +** → **Blueprint**.
+2. Dieses Repo auswählen – Render liest `render.yaml` und legt den Dienst `pflegematch` an.
+3. Render fragt die zwei **Turso-Werte** ab (für dauerhafte Daten):
+   - `DB_URL` = deine `libsql://…`-URL
+   - `DB_AUTH_TOKEN` = dein Turso-Token
+4. **Create / Deploy**. Nach dem Build bekommst du eine URL wie
+   `https://pflegematch.onrender.com` – fertig.
 
-1. Account auf [turso.tech](https://turso.tech) erstellen (kostenlos).
-2. Eine Datenbank anlegen und die **Datenbank-URL** (`libsql://…`) sowie einen
-   **Auth-Token** erzeugen (CLI: `turso db create pflegematch`,
-   `turso db show pflegematch --url`, `turso db tokens create pflegematch`).
+> **Datenbank-Logik:** Mit `DB_URL`/`DB_AUTH_TOKEN` (Turso) bleiben Daten dauerhaft.
+> Ohne diese Werte nutzt der Dienst eine lokale SQLite-Datei (auf dem Free-Tarif
+> flüchtig) – die App startet trotzdem sofort mit Demo-Daten.
+> Schema + Demo-Daten werden beim ersten Start automatisch angelegt
+> (Auto-Seed abschaltbar via `SEED_ON_EMPTY=0`).
 
-### 2. Vercel konfigurieren
+> Hinweis Free-Tarif: Der Dienst schläft nach ~15 Min Inaktivität; der erste Aufruf
+> danach dauert ~30–60 s. Für Dauerbetrieb einen bezahlten Plan wählen.
 
-In den **Vercel-Projekt-Einstellungen → Environment Variables** setzen:
-
-| Name | Wert |
-|------|------|
-| `DB_URL` | deine Turso-URL (`libsql://…`) |
-| `DB_AUTH_TOKEN` | dein Turso-Token |
-| `AKQUISE_LIVE` | `1` (Live-Zuweisersuche via OpenStreetMap) |
-
-Danach **Redeploy** auslösen. Die App läuft vollständig unter deiner `…vercel.app`-URL –
-kein zweiter Dienst, kein `VITE_API_URL` nötig (Frontend und API teilen sich die Domain).
-
-> Das Schema wird beim ersten Aufruf automatisch angelegt; ist die DB leer, werden
-> Demo-Daten geladen (abschaltbar via `SEED_ON_EMPTY=0`).
->
-> **Ohne `DB_URL`** läuft die App auf Vercel in einem **flüchtigen Demo-Modus**
-> (In-Memory-Datenbank): alles funktioniert sofort, aber Daten verschwinden beim
-> nächsten Kaltstart. Erst mit Turso (`DB_URL` + `DB_AUTH_TOKEN`) bleiben sie dauerhaft.
+> Die Dateien `vercel.json` / `api/` liegen weiterhin im Repo (alternativer
+> Vercel-Serverless-Weg), werden von Render aber ignoriert.
 
 ## Hinweis
 
