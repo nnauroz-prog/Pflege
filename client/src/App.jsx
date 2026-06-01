@@ -21,6 +21,7 @@ export default function App() {
   const [vermittlungen, setVermittlungen] = useState([]);
   const [fehler, setFehler] = useState(null);
   const [backendAus, setBackendAus] = useState(false);
+  const [backendDetail, setBackendDetail] = useState('');
 
   const laden = useCallback(async () => {
     try {
@@ -31,8 +32,9 @@ export default function App() {
       setFehler(null);
       setBackendAus(false);
     } catch (e) {
-      // Kein Backend erreichbar -> freundlicher Hinweis statt rohem Fehler
+      // Kein Backend erreichbar -> Hinweis + technischer Grund (für Diagnose)
       setBackendAus(true);
+      setBackendDetail(e?.message || String(e));
     }
   }, []);
 
@@ -68,6 +70,7 @@ export default function App() {
             Lösung: In den Vercel-Einstellungen → Environment Variables die Werte <code>DB_URL</code> und
             <code>DB_AUTH_TOKEN</code> (von turso.tech) setzen und neu deployen. Schritt-für-Schritt im README.
           </span>
+          {backendDetail && <div className="small" style={{ marginTop: 6, opacity: 0.85 }}>Technischer Grund: <code>{backendDetail}</code></div>}
         </div>
       )}
       {fehler && <div className="banner error">⚠ {fehler}</div>}
