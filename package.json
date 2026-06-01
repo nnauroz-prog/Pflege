@@ -2,13 +2,14 @@
   "name": "pflege-plattform",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "PflegeMatch – Vermittlungsplattform für Pfleger-Gesellschafter ohne Patienten",
+  "workspaces": ["client", "server"],
   "scripts": {
-    "install:all": "cd server && npm install && cd ../client && npm install",
-    "seed": "cd server && node src/seed.js",
-    "build": "cd client && npm run build",
-    "start": "cd server && npm start",
-    "dev:server": "cd server && npm run dev",
-    "dev:client": "cd client && npm run dev"
+    "build": "npm run build --prefix client",
+    "seed": "node server/src/seed.js",
+    "start": "node server/src/index.js",
+    "dev:server": "node --watch server/src/index.js",
+    "dev:client": "npm run dev --prefix client"
   }
 }

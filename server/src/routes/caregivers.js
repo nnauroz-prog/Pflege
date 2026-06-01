@@ -1,9 +1,8 @@
 import { Router } from 'express';
-import { db } from '../db.js';
+import { all, get, run } from '../db.js';
 import { matchesFuerPfleger } from '../matching.js';
 
 const router = Router();
-
 const QUALIS = ['pflegehelfer', 'pflegefachkraft', 'spezialisiert'];
 
 function serialize(row) {
@@ -16,18 +15,18 @@ function serialize(row) {
   };
 }
 
-router.get('/', (req, res) => {
-  const rows = db.prepare('SELECT * FROM caregivers ORDER BY erstellt_am DESC').all();
+router.get('/', async (req, res) => {
+  const rows = await all('SELECT * FROM caregivers ORDER BY erstellt_am DESC');
   res.json(rows.map(serialize));
 });
 
-router.get('/:id', (req, res) => {
-  const row = db.prepare('SELECT * FROM caregivers WHERE id = ?').get(req.params.id);
+router.get('/:id', async (req, res) => {
+  const row = await get('SELECT * FROM caregivers WHERE id = ?', [req.params.id]);
   if (!row) return res.status(404).json({ error: 'Pfleger nicht gefunden' });
   res.json(serialize(row));
 });
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const b = req.body || {};
   const fehler = [];
   if (!b.name?.trim()) fehler.push('name');
@@ -37,13 +36,11 @@ router.post('/', (req, res) => {
   if (!QUALIS.includes(b.qualifikation)) fehler.push('qualifikation');
   if (fehler.length) return res.status(400).json({ error: 'Pflichtfelder fehlen/ungueltig', felder: fehler });
 
-  const info = db
-    .prepare(
-      `INSERT INTO caregivers
-       (name, email, plz, stadt, qualifikation, spezialisierungen, radius_km, stunden_woche, ist_gesellschafter, hat_patienten, notiz)
-       VALUES (@name, @email, @plz, @stadt, @qualifikation, @spezialisierungen, @radius_km, @stunden_woche, @ist_gesellschafter, @hat_patienten, @notiz)`
-    )
-    .run({
+  const info = await run(
+    `INSERT INTO caregivers
+     (name, email, plz, stadt, qualifikation, spezialisierungen, radius_km, stunden_woche, ist_gesellschafter, hat_patienten, notiz)
+     VALUES (@name, @email, @plz, @stadt, @qualifikation, @spezialisierungen, @radius_km, @stunden_woche, @ist_gesellschafter, @hat_patienten, @notiz)`,
+    {
       name: b.name.trim(),
       email: b.email.trim(),
       plz: b.plz.trim(),
@@ -55,22 +52,21 @@ router.post('/', (req, res) => {
       ist_gesellschafter: b.ist_gesellschafter === false ? 0 : 1,
       hat_patienten: b.hat_patienten ? 1 : 0,
       notiz: b.notiz?.trim() || '',
-    });
-
-  const row = db.prepare('SELECT * FROM caregivers WHERE id = ?').get(info.lastInsertRowid);
+    }
+  );
+  const row = await get('SELECT * FROM caregivers WHERE id = ?', [info.lastInsertRowid]);
   res.status(201).json(serialize(row));
 });
 
-router.delete('/:id', (req, res) => {
-  db.prepare('DELETE FROM caregivers WHERE id = ?').run(req.params.id);
+router.delete('/:id', async (req, res) => {
+  await run('DELETE FROM caregivers WHERE id = ?', [req.params.id]);
   res.status(204).end();
 });
 
-// Passende offene Anfragen fuer diesen Pfleger
-router.get('/:id/matches', (req, res) => {
-  const c = db.prepare('SELECT * FROM caregivers WHERE id = ?').get(req.params.id);
+router.get('/:id/matches', async (req, res) => {
+  const c = await get('SELECT * FROM caregivers WHERE id = ?', [req.params.id]);
   if (!c) return res.status(404).json({ error: 'Pfleger nicht gefunden' });
-  const patienten = db.prepare('SELECT * FROM patients').all();
+  const patienten = await all('SELECT * FROM patients');
   res.json(matchesFuerPfleger(c, patienten));
 });
 

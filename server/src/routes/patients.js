@@ -1,31 +1,27 @@
 import { Router } from 'express';
-import { db } from '../db.js';
+import { all, get, run } from '../db.js';
 import { matchesFuerPatient } from '../matching.js';
 
 const router = Router();
-
 const QUALIS = ['pflegehelfer', 'pflegefachkraft', 'spezialisiert'];
 
 function serialize(row) {
   if (!row) return row;
-  return {
-    ...row,
-    benoetigte_leistungen: JSON.parse(row.benoetigte_leistungen || '[]'),
-  };
+  return { ...row, benoetigte_leistungen: JSON.parse(row.benoetigte_leistungen || '[]') };
 }
 
-router.get('/', (req, res) => {
-  const rows = db.prepare('SELECT * FROM patients ORDER BY erstellt_am DESC').all();
+router.get('/', async (req, res) => {
+  const rows = await all('SELECT * FROM patients ORDER BY erstellt_am DESC');
   res.json(rows.map(serialize));
 });
 
-router.get('/:id', (req, res) => {
-  const row = db.prepare('SELECT * FROM patients WHERE id = ?').get(req.params.id);
+router.get('/:id', async (req, res) => {
+  const row = await get('SELECT * FROM patients WHERE id = ?', [req.params.id]);
   if (!row) return res.status(404).json({ error: 'Anfrage nicht gefunden' });
   res.json(serialize(row));
 });
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const b = req.body || {};
   const fehler = [];
   if (!b.name?.trim()) fehler.push('name');
@@ -35,13 +31,11 @@ router.post('/', (req, res) => {
   if (!QUALIS.includes(b.benoetigte_qualifikation)) fehler.push('benoetigte_qualifikation');
   if (fehler.length) return res.status(400).json({ error: 'Pflichtfelder fehlen/ungueltig', felder: fehler });
 
-  const info = db
-    .prepare(
-      `INSERT INTO patients
-       (name, kontakt, plz, stadt, pflegegrad, benoetigte_qualifikation, benoetigte_leistungen, stunden_woche, dringlichkeit, status, notiz, quelle_lead_id, quelle_lead)
-       VALUES (@name, @kontakt, @plz, @stadt, @pflegegrad, @benoetigte_qualifikation, @benoetigte_leistungen, @stunden_woche, @dringlichkeit, 'offen', @notiz, @quelle_lead_id, @quelle_lead)`
-    )
-    .run({
+  const info = await run(
+    `INSERT INTO patients
+     (name, kontakt, plz, stadt, pflegegrad, benoetigte_qualifikation, benoetigte_leistungen, stunden_woche, dringlichkeit, status, notiz, quelle_lead_id, quelle_lead)
+     VALUES (@name, @kontakt, @plz, @stadt, @pflegegrad, @benoetigte_qualifikation, @benoetigte_leistungen, @stunden_woche, @dringlichkeit, 'offen', @notiz, @quelle_lead_id, @quelle_lead)`,
+    {
       name: b.name.trim(),
       kontakt: b.kontakt.trim(),
       plz: b.plz.trim(),
@@ -54,24 +48,22 @@ router.post('/', (req, res) => {
       notiz: b.notiz?.trim() || '',
       quelle_lead_id: Number(b.quelle_lead_id) || null,
       quelle_lead: b.quelle_lead?.trim() || '',
-    });
-
-  const row = db.prepare('SELECT * FROM patients WHERE id = ?').get(info.lastInsertRowid);
+    }
+  );
+  const row = await get('SELECT * FROM patients WHERE id = ?', [info.lastInsertRowid]);
   res.status(201).json(serialize(row));
 });
 
-router.delete('/:id', (req, res) => {
-  db.prepare('DELETE FROM patients WHERE id = ?').run(req.params.id);
+router.delete('/:id', async (req, res) => {
+  await run('DELETE FROM patients WHERE id = ?', [req.params.id]);
   res.status(204).end();
 });
 
-// Passende Pfleger (Gesellschafter ohne Patienten zuerst) fuer diese Anfrage
-router.get('/:id/matches', (req, res) => {
-  const p = db.prepare('SELECT * FROM patients WHERE id = ?').get(req.params.id);
+router.get('/:id/matches', async (req, res) => {
+  const p = await get('SELECT * FROM patients WHERE id = ?', [req.params.id]);
   if (!p) return res.status(404).json({ error: 'Anfrage nicht gefunden' });
-  // Fokus der Plattform: Gesellschafter, die noch keine Patienten haben
   const nurFrei = req.query.alle === '1' ? '' : 'WHERE ist_gesellschafter = 1 AND hat_patienten = 0';
-  const pfleger = db.prepare(`SELECT * FROM caregivers ${nurFrei}`).all();
+  const pfleger = await all(`SELECT * FROM caregivers ${nurFrei}`);
   res.json(matchesFuerPatient(p, pfleger));
 });
 

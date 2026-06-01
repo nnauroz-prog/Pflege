@@ -15,15 +15,16 @@ die Anfrage gilt dann als versorgt, der Pfleger als ausgelastet.
 
 ## Tech-Stack
 
-- **Backend:** Node.js + Express, SQLite (`better-sqlite3`) – REST-API
+- **Backend:** Node.js + Express, libSQL/Turso (`@libsql/client`) – REST-API
 - **Frontend:** React + Vite
 - **Matching:** eigene, regelbasierte Engine (`server/src/matching.js`)
+- **Deployment:** Vercel (Frontend + Serverless-API in `api/`)
 
 ## Schnellstart
 
 ```bash
-# 1. Abhängigkeiten installieren (Server + Client)
-npm run install:all
+# 1. Abhängigkeiten installieren (npm-Workspaces: Client + Server)
+npm install
 
 # 2. Beispieldaten laden (4 Pfleger, 3 Anfragen)
 npm run seed
@@ -71,36 +72,35 @@ server/   Express-API, SQLite-Schema, Matching-Engine, Seed
 client/   React-Frontend (Dashboard, Vermittlung, Pfleger, Anfragen)
 ```
 
-## Deployment: Frontend (Vercel) + Backend (Render)
+## Deployment: komplett auf Vercel (mit Turso-Datenbank)
 
-Die App ist getrennt deploybar: statisches Frontend auf **Vercel**, API + Datenbank
-auf **Render**.
+Frontend **und** API laufen auf einer einzigen Vercel-Deployment. Die API liegt als
+Serverless-Funktion unter `api/` (siehe `vercel.json`), die Datenbank ist **Turso**
+(libSQL, SQLite-kompatibel, kostenloser Tarif). Lokal nutzt dieselbe Codebasis eine
+SQLite-Datei.
 
-### 1. Backend auf Render
+### 1. Turso-Datenbank anlegen (einmalig)
 
-1. Auf [render.com](https://render.com) einloggen → **New +** → **Blueprint**.
-2. Dieses Repo auswählen – Render liest `render.yaml` und legt den Dienst
-   `pflegematch-api` an.
-3. Nach dem Deploy bekommst du eine URL wie `https://pflegematch-api.onrender.com`.
-   Test: `…/api/health` sollte JSON liefern.
+1. Account auf [turso.tech](https://turso.tech) erstellen (kostenlos).
+2. Eine Datenbank anlegen und die **Datenbank-URL** (`libsql://…`) sowie einen
+   **Auth-Token** erzeugen (CLI: `turso db create pflegematch`,
+   `turso db show pflegematch --url`, `turso db tokens create pflegematch`).
 
-> **Daten-Hinweis:** Im Free-Tarif wird die SQLite-Datei bei jedem Deploy/Neustart
-> zurückgesetzt und der Dienst schläft nach Inaktivität (erster Aufruf danach dauert
-> ~30–60 s). Für **dauerhafte Daten** in `render.yaml` `plan: starter` setzen und den
-> `disk`-Block + `DB_PATH=/var/data/pflege.db` aktivieren (kostenpflichtig).
+### 2. Vercel konfigurieren
 
-### 2. Frontend auf Vercel
+In den **Vercel-Projekt-Einstellungen → Environment Variables** setzen:
 
-1. Vercel ist bereits mit dem Repo verbunden. `vercel.json` baut nur das Frontend
-   (`client/dist`).
-2. In den **Vercel-Projekt-Einstellungen → Environment Variables** setzen:
-   `VITE_API_URL = https://pflegematch-api.onrender.com` (deine Render-URL, **ohne**
-   `/api` am Ende).
-3. **Redeploy** auslösen – das Frontend ruft die API jetzt auf Render auf.
+| Name | Wert |
+|------|------|
+| `DB_URL` | deine Turso-URL (`libsql://…`) |
+| `DB_AUTH_TOKEN` | dein Turso-Token |
+| `AKQUISE_LIVE` | `1` (Live-Zuweisersuche via OpenStreetMap) |
 
-> `VITE_API_URL` wird beim Build eingebettet. Bei späterer Änderung der Backend-URL
-> neu deployen. Lokal bleibt die Variable leer → die App nutzt `/api` über den
-> Vite-Proxy.
+Danach **Redeploy** auslösen. Die App läuft vollständig unter deiner `…vercel.app`-URL –
+kein zweiter Dienst, kein `VITE_API_URL` nötig (Frontend und API teilen sich die Domain).
+
+> Das Schema wird beim ersten Aufruf automatisch angelegt. Beispieldaten optional per
+> `DB_URL=… DB_AUTH_TOKEN=… npm run seed` von lokal aus einspielen.
 
 ## Hinweis
 
