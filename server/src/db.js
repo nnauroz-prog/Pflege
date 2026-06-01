@@ -80,4 +80,15 @@ db.exec(`
   );
 `);
 
+// --- leichte Migrationen (Spalten ergänzen, falls DB älter ist) ---
+function ensureColumn(table, column, definition) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+// Herkunft einer Patientenanfrage (über welchen Zuweiser/Lead sie kam)
+ensureColumn('patients', 'quelle_lead_id', 'INTEGER');
+ensureColumn('patients', 'quelle_lead', "TEXT DEFAULT ''");
+
 export default db;

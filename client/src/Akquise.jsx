@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { api } from './api.js';
-import { LEAD_STATUS, KATEGORIE_ICON } from './constants.js';
+import { LEAD_STATUS, KATEGORIE_ICON, QUALIFIKATIONEN, LEISTUNGEN, DRINGLICHKEIT } from './constants.js';
 import { CheckboxGroup, Field } from './components.jsx';
 
 export default function Akquise({ setFehler }) {
@@ -13,6 +13,7 @@ export default function Akquise({ setFehler }) {
   const [filter, setFilter] = useState({ status: '', kategorie: '' });
   const [info, setInfo] = useState(null);
   const [laden, setLaden] = useState(false);
+  const [patientFor, setPatientFor] = useState(null); // Lead, für den ein Patient aufgenommen wird
 
   useEffect(() => {
     api.akquiseKategorien().then(setKategorien).catch((e) => setFehler(e.message));
@@ -54,6 +55,26 @@ export default function Akquise({ setFehler }) {
       await api.updateLead(id, data);
       await ladeListe();
       await aktualisiereRoute();
+    } catch (e) {
+      setFehler(e.message);
+    }
+  };
+
+  const patientAufnehmen = async (lead, daten) => {
+    try {
+      await api.createPatient({
+        ...daten,
+        plz: lead.plz || '',
+        stadt: lead.stadt || lead.gebiet || '',
+        quelle_lead_id: lead.id,
+        quelle_lead: lead.name,
+      });
+      // Zuweiser gilt damit als gewonnen
+      if (lead.status !== 'gewonnen') await api.updateLead(lead.id, { status: 'gewonnen' });
+      setPatientFor(null);
+      await ladeListe();
+      await aktualisiereRoute();
+      setInfo(`Patientenanfrage über „${lead.name}“ angelegt – jetzt im Tab „Vermittlung“ matchbar.`);
     } catch (e) {
       setFehler(e.message);
     }
@@ -174,6 +195,7 @@ export default function Akquise({ setFehler }) {
                       </select>
                       <input className="assignee" placeholder="Zuständig…" defaultValue={l.zustaendig}
                         onBlur={(e) => e.target.value !== l.zustaendig && setLead(l.id, { zustaendig: e.target.value })} />
+                      <button type="button" className="btn primary btn-sm" title="Patientenanfrage von diesem Zuweiser aufnehmen" onClick={() => setPatientFor(l)}>＋ Patient</button>
                     </div>
                   </li>
                 ))}
@@ -182,7 +204,62 @@ export default function Akquise({ setFehler }) {
           </div>
         </div>
       </div>
+
+      {patientFor && (
+        <PatientModal lead={patientFor} onClose={() => setPatientFor(null)} onSave={(d) => patientAufnehmen(patientFor, d)} />
+      )}
     </section>
+  );
+}
+
+function PatientModal({ lead, onClose, onSave }) {
+  const [d, setD] = useState({
+    name: '', kontakt: '', pflegegrad: 2, benoetigte_qualifikation: 'pflegefachkraft',
+    benoetigte_leistungen: [], stunden_woche: 10, dringlichkeit: 'normal',
+  });
+  const set = (k, v) => setD((x) => ({ ...x, [k]: v }));
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="card-head">
+          <h2>Patient aufnehmen</h2>
+          <p className="muted small">Herkunft: {KATEGORIE_ICON[lead.kategorie]} {lead.name}{lead.stadt ? ` · ${lead.stadt}` : ''}</p>
+        </div>
+        <form className="form" onSubmit={(e) => { e.preventDefault(); onSave(d); }}>
+          <div className="row">
+            <Field label="Name / Pseudonym"><input value={d.name} onChange={(e) => set('name', e.target.value)} required /></Field>
+            <Field label="Kontakt"><input value={d.kontakt} onChange={(e) => set('kontakt', e.target.value)} required /></Field>
+          </div>
+          <div className="row">
+            <Field label="Pflegegrad">
+              <select value={d.pflegegrad} onChange={(e) => set('pflegegrad', e.target.value)}>
+                {[1, 2, 3, 4, 5].map((g) => <option key={g} value={g}>Pflegegrad {g}</option>)}
+              </select>
+            </Field>
+            <Field label="Benötigte Qualifikation">
+              <select value={d.benoetigte_qualifikation} onChange={(e) => set('benoetigte_qualifikation', e.target.value)}>
+                {QUALIFIKATIONEN.map((q) => <option key={q.value} value={q.value}>{q.label}</option>)}
+              </select>
+            </Field>
+          </div>
+          <Field label="Benötigte Leistungen">
+            <CheckboxGroup options={LEISTUNGEN} value={d.benoetigte_leistungen} onChange={(v) => set('benoetigte_leistungen', v)} />
+          </Field>
+          <div className="row">
+            <Field label="Bedarf (h/Woche)"><input type="number" min="1" value={d.stunden_woche} onChange={(e) => set('stunden_woche', e.target.value)} /></Field>
+            <Field label="Dringlichkeit">
+              <select value={d.dringlichkeit} onChange={(e) => set('dringlichkeit', e.target.value)}>
+                {DRINGLICHKEIT.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}
+              </select>
+            </Field>
+          </div>
+          <div className="modal-actions">
+            <button type="button" className="btn ghost" onClick={onClose}>Abbrechen</button>
+            <button type="submit" className="btn primary">Anfrage anlegen</button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 

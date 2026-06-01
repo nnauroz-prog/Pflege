@@ -38,8 +38,8 @@ router.post('/', (req, res) => {
   const info = db
     .prepare(
       `INSERT INTO patients
-       (name, kontakt, plz, stadt, pflegegrad, benoetigte_qualifikation, benoetigte_leistungen, stunden_woche, dringlichkeit, status, notiz)
-       VALUES (@name, @kontakt, @plz, @stadt, @pflegegrad, @benoetigte_qualifikation, @benoetigte_leistungen, @stunden_woche, @dringlichkeit, 'offen', @notiz)`
+       (name, kontakt, plz, stadt, pflegegrad, benoetigte_qualifikation, benoetigte_leistungen, stunden_woche, dringlichkeit, status, notiz, quelle_lead_id, quelle_lead)
+       VALUES (@name, @kontakt, @plz, @stadt, @pflegegrad, @benoetigte_qualifikation, @benoetigte_leistungen, @stunden_woche, @dringlichkeit, 'offen', @notiz, @quelle_lead_id, @quelle_lead)`
     )
     .run({
       name: b.name.trim(),
@@ -52,6 +52,8 @@ router.post('/', (req, res) => {
       stunden_woche: Number(b.stunden_woche) || 10,
       dringlichkeit: ['niedrig', 'normal', 'hoch'].includes(b.dringlichkeit) ? b.dringlichkeit : 'normal',
       notiz: b.notiz?.trim() || '',
+      quelle_lead_id: Number(b.quelle_lead_id) || null,
+      quelle_lead: b.quelle_lead?.trim() || '',
     });
 
   const row = db.prepare('SELECT * FROM patients WHERE id = ?').get(info.lastInsertRowid);

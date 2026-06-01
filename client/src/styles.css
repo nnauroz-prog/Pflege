@@ -175,6 +175,14 @@ input[type='range'] { width: 100%; accent-color: var(--brand); }
 .filter-row { display: flex; gap: 8px; margin-top: 8px; }
 .filter-row select { flex: 1; }
 
+.btn-sm { padding: 6px 10px; font-size: 12.5px; }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, .45); display: grid; place-items: center; padding: 16px; z-index: 50; }
+.modal { background: var(--card); border-radius: var(--radius); box-shadow: 0 20px 50px rgba(0,0,0,.25); width: 100%; max-width: 560px; max-height: 90vh; overflow: auto; }
+.modal .form { padding: 18px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+
 @media (max-width: 820px) {
   .kpis { grid-template-columns: 1fr 1fr; }
   .grid-2 { grid-template-columns: 1fr; }

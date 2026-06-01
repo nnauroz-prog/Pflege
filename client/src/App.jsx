@@ -365,6 +365,7 @@ function AnfragenView({ patienten, reload, setFehler }) {
                   <strong>{p.name}</strong>{' '}
                   {p.status === 'vermittelt' ? <span className="tag tag-ok">vermittelt</span> : <span className={`tag tag-${p.dringlichkeit}`}>{p.dringlichkeit}</span>}
                   <div className="muted small">PG {p.pflegegrad} · {p.stadt} ({p.plz}) · {qualiLabel(p.benoetigte_qualifikation)} · {p.stunden_woche} h/Woche</div>
+                  {p.quelle_lead && <div className="muted small">🔗 via Zuweiser: {p.quelle_lead}</div>}
                   <Chips items={p.benoetigte_leistungen} />
                 </div>
                 <button className="btn ghost" onClick={() => entfernen(p.id)}>Entfernen</button>
