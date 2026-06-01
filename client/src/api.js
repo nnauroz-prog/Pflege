@@ -45,6 +45,8 @@ export const api = {
   },
   akquiseRoute: (lat, lon, limit = 12) => req(`/akquise/route?lat=${lat}&lon=${lon}&limit=${limit}`),
   akquiseStats: () => req('/akquise/stats'),
+  akquiseAgenten: () => req('/akquise/agenten'),
+  akquiseStrategie: (data) => req('/akquise/strategie', { method: 'POST', body: JSON.stringify(data) }),
   updateLead: (id, data) => req(`/akquise/leads/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteLead: (id) => req(`/akquise/leads/${id}`, { method: 'DELETE' }),
 };

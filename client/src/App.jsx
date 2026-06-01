@@ -3,9 +3,11 @@ import { api } from './api.js';
 import { QUALIFIKATIONEN, LEISTUNGEN, DRINGLICHKEIT, qualiLabel } from './constants.js';
 import { ScoreBadge, Chips, CheckboxGroup, Field } from './components.jsx';
 import Akquise from './Akquise.jsx';
+import Berater from './Berater.jsx';
 
 const TABS = [
   { id: 'dashboard', label: 'Übersicht' },
+  { id: 'berater', label: '🧠 Akquise-Berater' },
   { id: 'akquise', label: '🔍 Patienten finden' },
   { id: 'vermittlung', label: 'Vermittlung' },
   { id: 'pfleger', label: 'Pfleger (Gesellschafter)' },
@@ -72,6 +74,7 @@ export default function App() {
 
       <main className="content">
         {tab === 'dashboard' && <Dashboard pfleger={pfleger} patienten={patienten} vermittlungen={vermittlungen} goto={setTab} />}
+        {tab === 'berater' && <Berater setFehler={setFehler} />}
         {tab === 'akquise' && <Akquise setFehler={setFehler} />}
         {tab === 'vermittlung' && <Vermittlung patienten={patienten} reload={laden} setFehler={setFehler} />}
         {tab === 'pfleger' && <PflegerView pfleger={pfleger} reload={laden} setFehler={setFehler} />}

@@ -3,6 +3,7 @@ import { all, get, run, batch } from '../db.js';
 import { KATEGORIE_LISTE, KATEGORIEN } from '../akquise/categories.js';
 import { geocode } from '../akquise/geo.js';
 import { findeLeads, routenReihenfolge } from '../akquise/provider.js';
+import { strategiePlan, AGENTEN } from '../akquise/strategie.js';
 
 const router = Router();
 const STATI = ['neu', 'kontaktiert', 'termin', 'gewonnen', 'kein_interesse'];
@@ -10,6 +11,21 @@ const LIVE = process.env.AKQUISE_LIVE !== '0';
 
 router.get('/kategorien', (req, res) => {
   res.json(KATEGORIE_LISTE.map((k) => ({ ...k, tipp: KATEGORIEN[k.key].tipp })));
+});
+
+// Akquise-Berater (virtuelles Team): das gesamte Agenten-Team
+router.get('/agenten', (req, res) => res.json(AGENTEN));
+
+// Personalisierter, priorisierter Strategieplan
+router.post('/strategie', (req, res) => {
+  const b = req.body || {};
+  res.json(
+    strategiePlan({
+      leistungen: Array.isArray(b.leistungen) ? b.leistungen : [],
+      kapazitaet: Number(b.kapazitaet) || 0,
+      schon_versucht: Array.isArray(b.schon_versucht) ? b.schon_versucht : [],
+    })
+  );
 });
 
 router.post('/suche', async (req, res) => {

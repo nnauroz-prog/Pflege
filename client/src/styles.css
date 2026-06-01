@@ -179,6 +179,33 @@ input[type='range'] { width: 100%; accent-color: var(--brand); }
 
 .btn-sm { padding: 6px 10px; font-size: 12.5px; }
 
+/* Akquise-Berater */
+.diag { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; }
+.diag li { line-height: 1.5; }
+.erwartet { margin-top: 14px; padding: 12px; background: #e7f6f1; border-radius: 8px; color: var(--brand-d); }
+.phasen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.phase { border: 1px solid var(--line); border-radius: 10px; padding: 12px; border-top: 4px solid var(--brand); }
+.phase-mittel { border-top-color: #d97706; }
+.phase-schwach { border-top-color: #9ca3af; }
+.phase h3 { margin: 0 0 8px; font-size: 14px; }
+.phase ul { margin: 0; padding-left: 16px; font-size: 13px; color: var(--ink); display: flex; flex-direction: column; gap: 6px; }
+
+.agent-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.agent { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.agent-tried { background: #fafafa; }
+.agent-head { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px; background: none; border: none; cursor: pointer; text-align: left; }
+.agent-title { display: flex; flex-direction: column; min-width: 160px; flex: 1; }
+.agent-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.agent-toggle { color: var(--muted); margin-left: 8px; }
+.agent-body { padding: 0 14px 16px; border-top: 1px dashed var(--line); font-size: 14px; line-height: 1.55; }
+.agent-body p { margin: 10px 0; }
+.agent-hinweis { background: #eff6ff; color: #1e40af; border-radius: 8px; padding: 8px 10px; margin-top: 12px; font-size: 13px; }
+.agent-steps { margin: 6px 0 12px; padding-left: 20px; display: flex; flex-direction: column; gap: 5px; }
+.vorlage { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin: 8px 0; }
+.vorlage-kopf { display: flex; justify-content: space-between; align-items: center; background: #f1f5f9; padding: 6px 10px; font-size: 13px; font-weight: 600; }
+.vorlage pre { margin: 0; padding: 10px; white-space: pre-wrap; font: 13px/1.5 ui-monospace, monospace; background: #fff; }
+.agent-fehler { background: #fef2f2; color: #991b1b; border-radius: 8px; padding: 8px 10px; }
+
 /* Karte */
 .map { height: 420px; width: 100%; border-radius: 0 0 var(--radius) var(--radius); z-index: 0; }
 .pin-center { font-size: 22px; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
