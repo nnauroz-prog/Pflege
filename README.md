@@ -71,6 +71,37 @@ server/   Express-API, SQLite-Schema, Matching-Engine, Seed
 client/   React-Frontend (Dashboard, Vermittlung, Pfleger, Anfragen)
 ```
 
+## Deployment: Frontend (Vercel) + Backend (Render)
+
+Die App ist getrennt deploybar: statisches Frontend auf **Vercel**, API + Datenbank
+auf **Render**.
+
+### 1. Backend auf Render
+
+1. Auf [render.com](https://render.com) einloggen → **New +** → **Blueprint**.
+2. Dieses Repo auswählen – Render liest `render.yaml` und legt den Dienst
+   `pflegematch-api` an.
+3. Nach dem Deploy bekommst du eine URL wie `https://pflegematch-api.onrender.com`.
+   Test: `…/api/health` sollte JSON liefern.
+
+> **Daten-Hinweis:** Im Free-Tarif wird die SQLite-Datei bei jedem Deploy/Neustart
+> zurückgesetzt und der Dienst schläft nach Inaktivität (erster Aufruf danach dauert
+> ~30–60 s). Für **dauerhafte Daten** in `render.yaml` `plan: starter` setzen und den
+> `disk`-Block + `DB_PATH=/var/data/pflege.db` aktivieren (kostenpflichtig).
+
+### 2. Frontend auf Vercel
+
+1. Vercel ist bereits mit dem Repo verbunden. `vercel.json` baut nur das Frontend
+   (`client/dist`).
+2. In den **Vercel-Projekt-Einstellungen → Environment Variables** setzen:
+   `VITE_API_URL = https://pflegematch-api.onrender.com` (deine Render-URL, **ohne**
+   `/api` am Ende).
+3. **Redeploy** auslösen – das Frontend ruft die API jetzt auf Render auf.
+
+> `VITE_API_URL` wird beim Build eingebettet. Bei späterer Änderung der Backend-URL
+> neu deployen. Lokal bleibt die Variable leer → die App nutzt `/api` über den
+> Vite-Proxy.
+
 ## Hinweis
 
 Demo-/MVP-Stand. Vor Produktiveinsatz: Authentifizierung, Datenschutz (DSGVO,
