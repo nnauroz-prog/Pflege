@@ -22,8 +22,9 @@ export default function App() {
   const [fehler, setFehler] = useState(null);
   const [backendAus, setBackendAus] = useState(false);
   const [backendDetail, setBackendDetail] = useState('');
+  const [startet, setStartet] = useState(false);
 
-  const laden = useCallback(async () => {
+  const laden = useCallback(async (versuch = 0) => {
     try {
       const [p, a, v] = await Promise.all([api.listPfleger(), api.listPatienten(), api.listVermittlungen()]);
       setPfleger(p);
@@ -31,10 +32,18 @@ export default function App() {
       setVermittlungen(v);
       setFehler(null);
       setBackendAus(false);
+      setStartet(false);
     } catch (e) {
-      // Kein Backend erreichbar -> Hinweis + technischer Grund (für Diagnose)
-      setBackendAus(true);
-      setBackendDetail(e?.message || String(e));
+      // Render-Free-Tarif: Server "schläft" und braucht ~30-60 s zum Aufwachen.
+      // Daher mehrmals mit Verzögerung neu versuchen, bevor wir aufgeben.
+      if (versuch < 8) {
+        setStartet(true);
+        setTimeout(() => laden(versuch + 1), 5000);
+      } else {
+        setStartet(false);
+        setBackendAus(true);
+        setBackendDetail(e?.message || String(e));
+      }
     }
   }, []);
 
@@ -61,6 +70,12 @@ export default function App() {
         </nav>
       </header>
 
+      {startet && (
+        <div className="banner info">
+          ⏳ <b>Server wird gestartet …</b> Der Dienst war im Ruhezustand (Render Free-Tarif) und wacht gerade auf –
+          das dauert einmalig ~30–60&nbsp;Sekunden. Bitte kurz warten, die Daten laden automatisch.
+        </div>
+      )}
       {backendAus && (
         <div className="banner warn">
           🔌 <b>Kein Backend verbunden.</b> Das Frontend läuft, aber die Datenbank/API ist noch nicht angebunden –
