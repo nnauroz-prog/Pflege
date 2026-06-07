@@ -3,7 +3,7 @@
 import 'express-async-errors'; // leitet Fehler aus async-Handlern an den Error-Handler
 import express from 'express';
 import cors from 'cors';
-import { init, get } from './db.js';
+import { init, get, isRemote } from './db.js';
 import caregivers from './routes/caregivers.js';
 import patients from './routes/patients.js';
 import vermittlungen from './routes/vermittlungen.js';
@@ -33,7 +33,7 @@ app.get('/health', async (req, res) => {
     const z = async (sql) => (await get(sql))?.n ?? 0;
     res.json({
       ok: true,
-      treiber: /^(libsql|https?|wss?):/i.test(process.env.DB_URL || '') ? 'turso(remote)' : 'lokal',
+      treiber: isRemote ? 'turso(remote)' : 'lokal',
       pfleger: await z('SELECT COUNT(*) AS n FROM caregivers'),
       anfragen: await z('SELECT COUNT(*) AS n FROM patients'),
       offen: await z("SELECT COUNT(*) AS n FROM patients WHERE status='offen'"),

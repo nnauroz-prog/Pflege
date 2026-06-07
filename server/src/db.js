@@ -3,11 +3,15 @@
 // Wichtig: Remote (Turso) nutzt den reinen JS-Client (@libsql/client/web),
 // damit in Vercels Serverless-Umgebung kein natives Modul geladen werden muss.
 
+// Defensive Bereinigung: häufiger Copy-&-Paste-Fehler sind unsichtbare
+// Leerzeichen/Zeilenumbrüche oder umschließende Anführungszeichen.
+const clean = (v) => (v || '').trim().replace(/^['"]|['"]$/g, '').trim();
+
 // Reihenfolge: explizit gesetzte DB_URL (Turso, dauerhaft) > Vercel ohne DB
 // (In-Memory, läuft sofort mit Demo-Daten, aber flüchtig) > lokal (Datei).
-const url = process.env.DB_URL || (process.env.VERCEL ? ':memory:' : 'file:pflege.db');
-const authToken = process.env.DB_AUTH_TOKEN;
-const isRemote = /^(libsql|https?|wss?):/i.test(url);
+const url = clean(process.env.DB_URL) || (process.env.VERCEL ? ':memory:' : 'file:pflege.db');
+const authToken = clean(process.env.DB_AUTH_TOKEN) || undefined;
+export const isRemote = /^(libsql|https?|wss?):/i.test(url);
 
 export let client; // wird in init() gesetzt (Treiberwahl je nach URL)
 

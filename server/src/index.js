@@ -15,6 +15,7 @@ if (existsSync(clientDist)) {
   app.get('*', (req, res) => res.sendFile(join(clientDist, 'index.html')));
 }
 
-app.listen(PORT, () => {
-  console.log(`Pflege-Plattform laeuft auf http://localhost:${PORT}`);
+// 0.0.0.0 explizit – nötig, damit Hosting-Plattformen (z. B. Render) den Dienst erreichen.
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Pflege-Plattform laeuft auf Port ${PORT}`);
 });
