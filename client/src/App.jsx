@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { api } from './api.js';
 import { QUALIFIKATIONEN, LEISTUNGEN, DRINGLICHKEIT, qualiLabel } from './constants.js';
 import { ScoreBadge, Chips, CheckboxGroup, Field } from './components.jsx';
@@ -168,7 +168,7 @@ function Kpi({ label, value, hint, onClick }) {
 
 /* ---------------- Vermittlung / Matching ---------------- */
 function Vermittlung({ patienten, reload, setFehler }) {
-  const offen = patienten.filter((p) => p.status === 'offen');
+  const offen = useMemo(() => patienten.filter((p) => p.status === 'offen'), [patienten]);
   const [aktiv, setAktiv] = useState(null);
   const [matches, setMatches] = useState([]);
   const [laden, setLaden] = useState(false);
@@ -238,7 +238,7 @@ function Vermittlung({ patienten, reload, setFehler }) {
                   </div>
                   <ul className="reasons">
                     {m.gruende.map((g, i) => (
-                      <li key={i} className={g.startsWith('Bonus') ? 'reason bonus' : /reicht nicht|Ausserhalb|Keine/.test(g) ? 'reason neg' : 'reason pos'}>
+                      <li key={i} className={g.startsWith('Bonus') ? 'reason bonus' : /reicht nicht|Ausserhalb|Keine freie Kapazität/.test(g) ? 'reason neg' : 'reason pos'}>
                         {g}
                       </li>
                     ))}

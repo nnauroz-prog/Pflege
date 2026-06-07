@@ -314,7 +314,7 @@ export function strategiePlan({ leistungen = [], kapazitaet = 0, schon_versucht 
     tage_90: kanaele.slice(6, 9).map((k) => k.kanal),
   };
 
-  const erwartet_min = kanaele.slice(0, 5).reduce((s, k) => s + Number(String(k.patienten).split('–')[0]) || 0, 0);
+  const erwartet_min = kanaele.slice(0, 5).reduce((s, k) => s + (Number(String(k.patienten).split('–')[0]) || 0), 0);
   const erwartet_max = kanaele.slice(0, 5).reduce((s, k) => s + (Number(String(k.patienten).split('–')[1]) || Number(String(k.patienten).split('–')[0]) || 0), 0);
 
   const diagnose = baueDiagnose(schon_versucht, kapazitaet);

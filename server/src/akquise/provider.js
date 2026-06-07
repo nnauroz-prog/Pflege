@@ -79,14 +79,20 @@ function demoLeads(lat, lon, radiusKm, kategorien) {
     pflegestuetzpunkt: ['Pflegestützpunkt der Stadt', 'Pflegeberatung Caritas'],
   };
   const STRASSEN = ['Hauptstraße', 'Bahnhofstraße', 'Lindenallee', 'Gartenweg', 'Marktplatz', 'Schulstraße', 'Ringstraße'];
+  // deterministischer Pseudo-Zufall: gleiches Gebiet -> gleiche Leads (keine Dubletten
+  // bei wiederholter Suche, da UNIQUE(name,lat,lon) dann per Upsert greift)
+  const rnd = (seed) => {
+    const x = Math.sin(seed * 999.137 + lat * 12.9898 + lon * 78.233) * 43758.5453;
+    return x - Math.floor(x);
+  };
   let id = 1;
   const leads = [];
   for (const kat of kategorien) {
     const namen = NAMEN[kat] || [KATEGORIEN[kat]?.label || kat];
     const anzahl = Math.max(2, Math.round((KATEGORIEN[kat]?.gewicht || 50) / 20));
     for (let i = 0; i < anzahl; i++) {
-      const winkel = Math.random() * 2 * Math.PI;
-      const dist = Math.random() * radiusKm;
+      const winkel = rnd(id) * 2 * Math.PI;
+      const dist = rnd(id + 0.5) * radiusKm;
       const dLat = (dist / 111) * Math.cos(winkel);
       const dLon = (dist / (111 * Math.cos((lat * Math.PI) / 180))) * Math.sin(winkel);
       leads.push({

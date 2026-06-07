@@ -21,18 +21,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Schema bei (erstem) Aufruf sicherstellen – wichtig für Serverless-Cold-Start.
-app.use(async (req, res, next) => {
-  try {
-    await init();
-    next();
-  } catch (e) {
-    next(e);
-  }
-});
+// Hinweis: Das Schema/init() wird von den DB-Helfern (all/get/run/batch) sowie
+// von /health selbst lazy sichergestellt – keine globale Middleware nötig, damit
+// /health auch bei DB-Problemen sauber mit Status 200 antworten kann.
 
 app.get('/health', async (req, res) => {
-  // bewusst mit try/catch: zeigt im Fehlerfall den ECHTEN Grund als Text
+  // IMMER 200, damit Plattform-Healthchecks (z.B. Render) den Dienst nicht
+  // wegen eines DB-Problems offline nehmen. DB-Status steht im Body.
   try {
     await init();
     const z = async (sql) => (await get(sql))?.n ?? 0;
@@ -46,7 +41,7 @@ app.get('/health', async (req, res) => {
       leads: await z('SELECT COUNT(*) AS n FROM leads'),
     });
   } catch (e) {
-    res.status(500).json({ ok: false, fehler: String(e?.message || e), code: e?.code || null });
+    res.json({ ok: false, db_fehler: String(e?.message || e), code: e?.code || null });
   }
 });
 

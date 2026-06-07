@@ -4,6 +4,7 @@ import { LEAD_STATUS, KATEGORIE_ICON, KATEGORIEN_AKQUISE, QUALIFIKATIONEN, LEIST
 import { CheckboxGroup, Field } from './components.jsx';
 import MapView from './MapView.jsx';
 import AgentDetail from './AgentDetail.jsx';
+import { toCsv, downloadCsv } from './exportCsv.js';
 
 export default function Akquise({ setFehler }) {
   const kategorien = KATEGORIEN_AKQUISE; // lokal – kein Backend nötig fürs Formular
@@ -99,6 +100,23 @@ export default function Akquise({ setFehler }) {
       kategorien: f.kategorien.includes(k) ? f.kategorien.filter((x) => x !== k) : [...f.kategorien, k],
     }));
 
+  const exportiereCsv = () => {
+    const csv = toCsv(leads, [
+      { label: 'Name', key: 'name' },
+      { label: 'Kategorie', key: 'kategorie' },
+      { label: 'Potenzial', key: 'potenzial_score' },
+      { label: 'Status', key: 'status' },
+      { label: 'Zuständig', key: 'zustaendig' },
+      { label: 'Adresse', key: 'adresse' },
+      { label: 'PLZ', key: 'plz' },
+      { label: 'Stadt', key: 'stadt' },
+      { label: 'Telefon', key: 'telefon' },
+      { label: 'Distanz_km', key: 'distanz_km' },
+      { label: 'Gebiet', key: 'gebiet' },
+    ]);
+    downloadCsv('zuweiser-leads.csv', csv);
+  };
+
   return (
     <section>
       <div className="card">
@@ -185,7 +203,10 @@ export default function Akquise({ setFehler }) {
 
         <div className="card">
           <div className="card-head">
-            <h2>Zuweiser-Liste (Team-CRM)</h2>
+            <div className="head-row">
+              <h2>Zuweiser-Liste (Team-CRM)</h2>
+              <button type="button" className="btn btn-sm" disabled={leads.length === 0} onClick={exportiereCsv}>⬇ CSV</button>
+            </div>
             <div className="filter-row">
               <select value={filter.status} onChange={(e) => setFilter((f) => ({ ...f, status: e.target.value }))}>
                 <option value="">Alle Status</option>
@@ -218,7 +239,7 @@ export default function Akquise({ setFehler }) {
                       <select value={l.status} onChange={(e) => setLead(l.id, { status: e.target.value })} className={`status-sel status-${l.status}`}>
                         {LEAD_STATUS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                       </select>
-                      <input className="assignee" placeholder="Zuständig…" defaultValue={l.zustaendig}
+                      <input key={`z-${l.id}-${l.zustaendig}`} className="assignee" placeholder="Zuständig…" defaultValue={l.zustaendig}
                         onBlur={(e) => e.target.value !== l.zustaendig && setLead(l.id, { zustaendig: e.target.value })} />
                       <button type="button" className="btn primary btn-sm" title="Patientenanfrage von diesem Zuweiser aufnehmen" onClick={() => setPatientFor(l)}>＋ Patient</button>
                       {agentByKat[l.kategorie] && (

@@ -11,7 +11,7 @@ async function req(path, opts = {}) {
     let msg = `Fehler ${res.status}`;
     try {
       const j = await res.json();
-      if (j.error) msg = j.error + (j.felder ? `: ${j.felder.join(', ')}` : '');
+      if (j.error) msg = j.error + (Array.isArray(j.felder) ? `: ${j.felder.join(', ')}` : '');
     } catch {}
     throw new Error(msg);
   }
