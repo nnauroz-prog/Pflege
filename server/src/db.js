@@ -14,11 +14,20 @@ const authToken = clean(process.env.DB_AUTH_TOKEN) || undefined;
 export const isRemote = /^(libsql|https?|wss?):/i.test(url);
 
 export let client; // wird in init() gesetzt (Treiberwahl je nach URL)
+// Statusinfo für /health: ist ein Fallback aktiv und warum?
+export const dbStatus = { modus: isRemote ? 'turso(remote)' : 'lokal', fallback: false, grund: null };
 
 async function makeClient() {
   // beide Importe als Literale, damit der Vercel-Bundler sie einschließt
   const mod = isRemote ? await import('@libsql/client/web') : await import('@libsql/client');
   return mod.createClient(authToken ? { url, authToken } : { url });
+}
+
+// Lokaler Fallback (nur außerhalb von Vercel, da dort kein natives Modul läuft):
+// stellt sicher, dass die App auch bei Turso-Problemen mit Daten funktioniert.
+async function makeFallbackClient() {
+  const mod = await import('@libsql/client');
+  return mod.createClient({ url: 'file:pflege.db' });
 }
 
 // kleine Helfer mit synchron-ähnlicher Signatur
@@ -95,7 +104,19 @@ const SCHEMA = [
 let bereit;
 export function init() {
   bereit ??= (async () => {
-    client = await makeClient();
+    try {
+      client = await makeClient();
+      await client.execute('SELECT 1'); // Verbindung wirklich prüfen
+    } catch (e) {
+      // Turso nicht erreichbar/falsch konfiguriert: außerhalb von Vercel auf
+      // lokale Datei ausweichen, damit die App trotzdem mit Daten läuft.
+      if (process.env.VERCEL) throw e;
+      console.warn('[db] Remote-DB fehlgeschlagen, nutze lokalen Fallback:', e?.message);
+      client = await makeFallbackClient();
+      dbStatus.fallback = true;
+      dbStatus.modus = 'lokal-fallback';
+      dbStatus.grund = String(e?.message || e);
+    }
     for (const sql of SCHEMA) await client.execute(sql);
     // Beim ersten Start mit leerer DB Demo-Daten laden, damit sofort etwas
     // zu sehen ist (abschaltbar via SEED_ON_EMPTY=0).
