@@ -84,14 +84,15 @@ ${antwortenText}
 
 Erstelle daraus die vollständige Dokumentation nach dem Strukturmodell: SIS über alle 6 Themenfelder (mit Ressourcen und Problemen/Risiken), eine Risikomatrix und einen konkreten, überprüfbaren Maßnahmenplan, plus eine kompakte Übergabe-Kurzfassung. Kurz und präzise. Wo Angaben fehlen, nenne offene Punkte unter "hinweise".`;
 
-  // Streaming + adaptive Thinking für hohe Qualität bei größerer Ausgabe.
+  // Ohne extended Thinking + kompaktes Limit, damit die Erzeugung zuverlässig
+  // innerhalb des Serverless-Zeitbudgets (Vercel max. 60 s) abgeschlossen ist.
   const stream = client().messages.stream({
     model: MODEL,
-    max_tokens: 16000,
-    thinking: { type: 'adaptive' },
+    max_tokens: 8000,
+    thinking: { type: 'disabled' },
     system: systemBlocks(),
     messages: [{ role: 'user', content: user }],
-    output_config: { effort: 'high', format: { type: 'json_schema', schema: PLAN_SCHEMA } },
+    output_config: { format: { type: 'json_schema', schema: PLAN_SCHEMA } },
   });
   const msg = await stream.finalMessage();
   return { plan: parseJson(msg), modell: MODEL, usage: msg.usage };
