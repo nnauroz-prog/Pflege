@@ -2,15 +2,17 @@ import Anthropic from '@anthropic-ai/sdk';
 import { SYSTEM_PROMPT, RUECKFRAGEN_SCHEMA, PLAN_SCHEMA } from './prompt.js';
 
 // Modell per Env konfigurierbar; Default = aktuell stärkstes Modell.
-const MODEL = process.env.CLAUDE_MODEL || 'claude-opus-4-8';
+const MODEL = (process.env.CLAUDE_MODEL || 'claude-opus-4-8').trim();
+// Key defensiv bereinigen (Leerzeichen/Zeilenumbruch/Quotes vom Copy-&-Paste).
+const API_KEY = (process.env.ANTHROPIC_API_KEY || '').trim().replace(/^['"]|['"]$/g, '').trim();
 
 export function kiVerfuegbar() {
-  return !!process.env.ANTHROPIC_API_KEY;
+  return !!API_KEY;
 }
 
 let _client;
 function client() {
-  if (!_client) _client = new Anthropic(); // liest ANTHROPIC_API_KEY aus der Umgebung
+  if (!_client) _client = new Anthropic({ apiKey: API_KEY });
   return _client;
 }
 
