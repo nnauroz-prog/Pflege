@@ -3,7 +3,7 @@
   "buildCommand": "npm run build --prefix client",
   "outputDirectory": "client/dist",
   "functions": {
-    "api/[...slug].js": { "maxDuration": 60 }
+    "api/**": { "maxDuration": 60 }
   },
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
