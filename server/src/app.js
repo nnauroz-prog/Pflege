@@ -8,6 +8,7 @@ import caregivers from './routes/caregivers.js';
 import patients from './routes/patients.js';
 import vermittlungen from './routes/vermittlungen.js';
 import akquise from './routes/akquise.js';
+import plan from './routes/plan.js';
 
 const app = express();
 app.use(cors());
@@ -51,6 +52,7 @@ app.use('/caregivers', caregivers);
 app.use('/patients', patients);
 app.use('/vermittlungen', vermittlungen);
 app.use('/akquise', akquise);
+app.use('/plan', plan);
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {

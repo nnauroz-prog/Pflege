@@ -18,7 +18,13 @@ services:
         value: "22"
       - key: AKQUISE_LIVE
         value: "1"
-      # Turso (dauerhafte Daten) – Werte im Render-Dashboard eingeben:
+      # KI-Assistent (SIS/Maßnahmenplan) – Anthropic-API-Key, im Dashboard eingeben:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # optional: anderes Modell, z. B. claude-sonnet-4-6 (günstiger/schneller)
+      - key: CLAUDE_MODEL
+        sync: false
+      # Turso (dauerhafte Daten) – optional, im Dashboard eingeben:
       - key: DB_URL
         sync: false
       - key: DB_AUTH_TOKEN

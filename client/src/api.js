@@ -49,4 +49,9 @@ export const api = {
   akquiseStrategie: (data) => req('/akquise/strategie', { method: 'POST', body: JSON.stringify(data) }),
   updateLead: (id, data) => req(`/akquise/leads/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteLead: (id) => req(`/akquise/leads/${id}`, { method: 'DELETE' }),
+
+  // SIS-/Maßnahmenplan-Assistent
+  planStatus: () => req('/plan/status'),
+  planRueckfragen: (data) => req('/plan/rueckfragen', { method: 'POST', body: JSON.stringify(data) }),
+  planErstellen: (data) => req('/plan/erstellen', { method: 'POST', body: JSON.stringify(data) }),
 };

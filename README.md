@@ -1,24 +1,34 @@
-# PflegeMatch
+# Pflegeplan-Assistent
 
-Vermittlungsplattform für **Pfleger, die Gesellschafter sind und (noch) keine
-Patienten haben**. Sie bringt freie Gesellschafter mit offenen
-Patientenanfragen zusammen und schlägt anhand eines nachvollziehbaren
-Matching-Scores die besten Paarungen vor.
+KI-gestützter Assistent für Pflegekräfte: Aus **wenigen Eckdaten** (Stammdaten +
+ein paar Fakten) stellt der Assistent gezielte **Rückfragen** und erstellt daraus
+eine professionelle **Strukturierte Informationssammlung (SIS)** mit den 6
+Themenfeldern, eine **Risikomatrix** und einen **Maßnahmenplan** nach dem
+deutschen **Strukturmodell** der Pflegedokumentation – kurz, präzise, strukturiert.
+Ergebnis als Text kopieren oder als PDF drucken.
 
-## Idee
+## Ablauf
 
-Gesellschafter ohne Patienten suchen aktiv Fälle. Angehörige stellen
-Pflegebedarf ein (Ort, Pflegegrad, benötigte Qualifikation und Leistungen,
-Stundenbedarf, Dringlichkeit). Die Matching-Engine bewertet jede Kombination
-von 0–100 Punkten und erklärt jede Entscheidung. Per Klick wird vermittelt –
-die Anfrage gilt dann als versorgt, der Pfleger als ausgelastet.
+1. **Eckdaten** eingeben (pseudonymisiert): Name, Pflegegrad, Diagnosen, Setting …
+2. **Rückfragen** des Assistenten beantworten (Unbekanntes leer lassen).
+3. **Plan** wird per KI erzeugt: Sicht der Person · SIS (6 Themenfelder) ·
+   Risikomatrix · Maßnahmenplan · Übergabe-Kurzfassung.
 
 ## Tech-Stack
 
-- **Backend:** Node.js + Express, libSQL/Turso (`@libsql/client`) – REST-API
-- **Frontend:** React + Vite
-- **Matching:** eigene, regelbasierte Engine (`server/src/matching.js`)
-- **Deployment:** Vercel (Frontend + Serverless-API in `api/`)
+- **KI:** Anthropic Claude (`@anthropic-ai/sdk`), strukturierte JSON-Ausgabe,
+  Prompt-Caching auf dem Fach-System-Prompt; Modell per `CLAUDE_MODEL` wählbar
+  (Default `claude-opus-4-8`).
+- **Backend:** Node.js + Express (`server/src/sis/`, `server/src/routes/plan.js`).
+- **Frontend:** React + Vite (Wizard: Eckdaten → Rückfragen → Plan).
+
+> Benötigt einen **`ANTHROPIC_API_KEY`** (von console.anthropic.com) in den
+> Umgebungsvariablen. Ohne Key startet die App, zeigt aber einen Hinweis statt
+> Ergebnissen.
+
+> Hinweis: Der frühere Vermittlungs-/Akquise-Teil (Matching, Zuweiser-Suche,
+> Berater) liegt weiterhin im Repo (`server/src/routes/*`, `client/src/Akquise.jsx`
+> u. a.) und ist über die API erreichbar, aber nicht mehr die Startoberfläche.
 
 ## Schnellstart
 

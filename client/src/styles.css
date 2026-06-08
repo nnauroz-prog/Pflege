@@ -52,6 +52,50 @@ body {
 .banner.error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
 .banner.warn { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; line-height: 1.5; }
 .banner.info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; line-height: 1.5; }
+
+/* Stepper */
+.stepper { display: flex; gap: 6px; margin-top: 16px; flex-wrap: wrap; }
+.step { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: rgba(255,255,255,.12); color: #e6fff7; font-size: 13px; }
+.step.aktiv { background: #fff; color: var(--brand-d); font-weight: 700; }
+.step.fertig { background: rgba(255,255,255,.22); }
+.step-n { width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,.15); display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+.step.aktiv .step-n { background: var(--brand); color: #fff; }
+
+textarea { border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; font: inherit; font-size: 14px; resize: vertical; }
+textarea:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
+.btn-reihe { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+
+/* Ladeanzeige */
+.lade { text-align: center; padding: 48px 16px; color: var(--muted); }
+.spinner { width: 42px; height: 42px; border: 4px solid var(--line); border-top-color: var(--brand); border-radius: 50%; margin: 0 auto 16px; animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Plan */
+.plan-aktionen { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.plan-titel { margin: 0; font-size: 20px; }
+.sektion { margin-bottom: 16px; }
+.sektion .card-head h3 { margin: 0; font-size: 16px; color: var(--brand-d); }
+.fliess { line-height: 1.6; margin: 0; }
+.themenfeld { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.themenfeld:last-child { border-bottom: none; }
+.themenfeld h4 { margin: 0 0 6px; font-size: 14.5px; }
+.themenfeld p { margin: 4px 0; line-height: 1.5; font-size: 14px; }
+.pos2 { color: #065f46; }
+.neg2 { color: #991b1b; }
+.risiko-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.risiko { display: flex; gap: 12px; align-items: flex-start; }
+.risiko .tag { flex-shrink: 0; }
+.massnahme-block { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.massnahme-block:last-child { border-bottom: none; }
+.massnahme-block h4 { margin: 0 0 4px; font-size: 14.5px; }
+.ziel { margin: 4px 0; line-height: 1.5; }
+.disclaimer { margin-top: 18px; text-align: center; }
+
+@media print {
+  .topbar, .banner, .plan-aktionen, .disclaimer { display: none !important; }
+  .content { max-width: none; padding: 0; }
+  .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+}
 .banner code { background: rgba(0,0,0,.06); padding: 1px 5px; border-radius: 4px; }
 
 /* KPIs */
