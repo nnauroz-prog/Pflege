@@ -22,9 +22,19 @@ export default function App() {
   const [laden, setLaden] = useState(false);
   const [ladeText, setLadeText] = useState('');
   const [fehler, setFehler] = useState(null);
+  const [kiDetail, setKiDetail] = useState('');
 
   useEffect(() => {
-    api.planStatus().then((s) => setKiOk(s.ki)).catch(() => setKiOk(false));
+    api
+      .planStatus()
+      .then((s) => {
+        setKiOk(s.ki);
+        setKiDetail(s.ki ? '' : 'Server erreichbar (API läuft), aber ANTHROPIC_API_KEY fehlt im Deploy → ki:false.');
+      })
+      .catch((e) => {
+        setKiOk(false);
+        setKiDetail('API nicht erreichbar: ' + (e?.message || String(e)) + ' → /api-Funktion läuft nicht.');
+      });
   }, []);
 
   const set = (k, v) => setStammdaten((s) => ({ ...s, [k]: v }));
@@ -84,7 +94,8 @@ export default function App() {
       {!kiOk && (
         <div className="banner warn">
           🔌 <b>KI noch nicht verbunden.</b> Du kannst die Eckdaten ausfüllen, aber zum Erstellen muss der
-          <code> ANTHROPIC_API_KEY</code> in den Umgebungsvariablen gesetzt sein.
+          <code> ANTHROPIC_API_KEY</code> gesetzt sein.
+          {kiDetail && <div className="small" style={{ marginTop: 6, opacity: 0.85 }}>Diagnose: <code>{kiDetail}</code></div>}
         </div>
       )}
       {fehler && <div className="banner error">⚠ {fehler}</div>}
