@@ -3,6 +3,9 @@
 import 'express-async-errors'; // leitet Fehler aus async-Handlern an den Error-Handler
 import express from 'express';
 import cors from 'cors';
+import { existsSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { init, get, dbStatus } from './db.js';
 import caregivers from './routes/caregivers.js';
 import patients from './routes/patients.js';
@@ -53,6 +56,15 @@ app.use('/patients', patients);
 app.use('/vermittlungen', vermittlungen);
 app.use('/akquise', akquise);
 app.use('/plan', plan);
+
+// Gebautes Frontend ausliefern (lokal vorhanden; auf Vercel via includeFiles
+// in die Funktion gebündelt). So liefert EIN Prozess Frontend + API aus.
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const clientDist = join(__dirname, '..', '..', 'client', 'dist');
+if (existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.get('*', (req, res) => res.sendFile(join(clientDist, 'index.html')));
+}
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
