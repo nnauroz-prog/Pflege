@@ -46,8 +46,10 @@ function parseJson(text) {
 }
 
 // --- Anbieter ---
-async function generateGemini(userText, maxTokens) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_KEY)}`;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function geminiCall(model, userText, maxTokens) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(GEMINI_KEY)}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -56,15 +58,38 @@ async function generateGemini(userText, maxTokens) {
       contents: [{ role: 'user', parts: [{ text: userText }] }],
       generationConfig: { responseMimeType: 'application/json', maxOutputTokens: maxTokens, temperature: 0.4 },
     }),
-    signal: AbortSignal.timeout(55000),
+    signal: AbortSignal.timeout(45000),
   });
   if (!res.ok) {
     const t = await res.text().catch(() => '');
-    throw new Error(`Gemini ${res.status}: ${t.slice(0, 300)}`);
+    const err = new Error(`Gemini ${res.status}: ${t.slice(0, 200)}`);
+    err.status = res.status;
+    throw err;
   }
   const data = await res.json();
   if (data?.promptFeedback?.blockReason) throw new Error('Gemini hat die Anfrage blockiert: ' + data.promptFeedback.blockReason);
   return (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
+}
+
+async function generateGemini(userText, maxTokens) {
+  // Mehrere kostenlose Modelle (jeweils eigene Quote) + Wiederholung bei 429/503.
+  const models = [...new Set([GEMINI_MODEL, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'])];
+  let lastErr;
+  for (const model of models) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await geminiCall(model, userText, maxTokens);
+      } catch (e) {
+        lastErr = e;
+        if ((e.status === 429 || e.status === 503) && attempt < 2) {
+          await sleep(1200 * (attempt + 1));
+          continue;
+        }
+        break; // anderes Problem -> nächstes Modell probieren
+      }
+    }
+  }
+  throw lastErr || new Error('Gemini: kein Modell erfolgreich');
 }
 
 let _anthropic;
