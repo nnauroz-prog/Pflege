@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { SYSTEM_PROMPT, RUECKFRAGEN_SCHEMA, PLAN_SCHEMA } from './prompt.js';
+import { SYSTEM_PROMPT, THEMENFELDER } from './prompt.js';
 
 // Modell per Env konfigurierbar; Default = aktuell stärkstes Modell.
 const MODEL = (process.env.CLAUDE_MODEL || 'claude-opus-4-8').trim();
@@ -37,13 +37,15 @@ function intakeText(stammdaten = {}, freitext = '') {
   return z.join('\n') || '(noch keine Angaben)';
 }
 
-// Extrahiert das JSON aus der Modellantwort (output_config.format liefert reines JSON im Text).
+// Extrahiert das JSON aus der Modellantwort (robust gegen Markdown-Codeblöcke).
 function parseJson(message) {
-  const text = (message.content || [])
+  let text = (message.content || [])
     .filter((b) => b.type === 'text')
     .map((b) => b.text)
     .join('')
     .trim();
+  // ```json ... ``` entfernen, falls vorhanden
+  text = text.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
   try {
     return JSON.parse(text);
   } catch {
@@ -59,7 +61,10 @@ export async function generiereRueckfragen({ stammdaten, freitext }) {
 
 ${intakeText(stammdaten, freitext)}
 
-Erstelle 5–8 GEZIELTE, kurze Rückfragen, deren Antworten du brauchst, um eine vollständige SIS und einen Maßnahmenplan zu erstellen. Frage nur nach dem, was wirklich fehlt und fachlich relevant ist (orientiert an den 6 Themenfeldern und den genannten Diagnosen). Jede Frage knapp und konkret beantwortbar.`;
+Erstelle 5–8 GEZIELTE, kurze Rückfragen, deren Antworten du brauchst, um eine vollständige SIS und einen Maßnahmenplan zu erstellen. Frage nur nach dem, was wirklich fehlt und fachlich relevant ist (orientiert an den 6 Themenfeldern und den genannten Diagnosen). Jede Frage knapp und konkret beantwortbar.
+
+Antworte AUSSCHLIESSLICH mit gültigem JSON (kein Markdown, keine Erklärung) in genau dieser Form:
+{"rueckfragen":[{"frage":"...","themenfeld":"...","warum":"..."}]}`;
 
   const msg = await client().messages.create({
     model: MODEL,
@@ -67,7 +72,6 @@ Erstelle 5–8 GEZIELTE, kurze Rückfragen, deren Antworten du brauchst, um eine
     thinking: { type: 'disabled' },
     system: systemBlocks(),
     messages: [{ role: 'user', content: user }],
-    output_config: { format: { type: 'json_schema', schema: RUECKFRAGEN_SCHEMA } },
   });
   return parseJson(msg);
 }
@@ -84,17 +88,19 @@ ${intakeText(stammdaten, freitext)}
 ANTWORTEN AUF RÜCKFRAGEN:
 ${antwortenText}
 
-Erstelle daraus die vollständige Dokumentation nach dem Strukturmodell: SIS über alle 6 Themenfelder (mit Ressourcen und Problemen/Risiken), eine Risikomatrix und einen konkreten, überprüfbaren Maßnahmenplan, plus eine kompakte Übergabe-Kurzfassung. Kurz und präzise. Wo Angaben fehlen, nenne offene Punkte unter "hinweise".`;
+Erstelle daraus die vollständige Dokumentation nach dem Strukturmodell: SIS über alle 6 Themenfelder (mit Ressourcen und Problemen/Risiken), eine Risikomatrix und einen konkreten, überprüfbaren Maßnahmenplan, plus eine kompakte Übergabe-Kurzfassung. Kurz und präzise. Wo Angaben fehlen, nenne offene Punkte unter "hinweise".
 
-  // Ohne extended Thinking + kompaktes Limit, damit die Erzeugung zuverlässig
-  // innerhalb des Serverless-Zeitbudgets (Vercel max. 60 s) abgeschlossen ist.
+Die 6 Themenfelder (genau diese Namen für "feld" verwenden): ${THEMENFELDER.map((t) => `"${t}"`).join(', ')}.
+
+Antworte AUSSCHLIESSLICH mit gültigem JSON (kein Markdown, keine Erklärung) in genau dieser Form:
+{"sicht_des_pflegebeduerftigen":"...","themenfelder":[{"feld":"<eines der 6 Themenfelder>","informationssammlung":"...","ressourcen":"...","probleme_und_risiken":"..."}],"risikomatrix":[{"risiko":"...","einschaetzung":"kein|niedrig|mittel|hoch","begruendung":"...","massnahme":"..."}],"massnahmenplan":[{"thema":"...","ziel":"...","massnahmen":["..."],"haeufigkeit":"...","evaluation":"..."}],"kurzfassung_uebergabe":"...","hinweise":["..."]}`;
+
   const stream = client().messages.stream({
     model: MODEL,
     max_tokens: 8000,
     thinking: { type: 'disabled' },
     system: systemBlocks(),
     messages: [{ role: 'user', content: user }],
-    output_config: { format: { type: 'json_schema', schema: PLAN_SCHEMA } },
   });
   const msg = await stream.finalMessage();
   return { plan: parseJson(msg), modell: MODEL, usage: msg.usage };
