@@ -39,9 +39,13 @@ function parseJson(text) {
   try {
     return JSON.parse(t);
   } catch {
-    const m = t.match(/\{[\s\S]*\}/);
-    if (m) return JSON.parse(m[0]);
-    throw new Error('KI-Antwort war kein gültiges JSON');
+    // größten {...}-Block versuchen (auch bei Vor-/Nachtext)
+    const first = t.indexOf('{');
+    const last = t.lastIndexOf('}');
+    if (first !== -1 && last > first) {
+      try { return JSON.parse(t.slice(first, last + 1)); } catch {}
+    }
+    throw new Error('KI-Antwort war kein gültiges JSON. Anfang: ' + (t.slice(0, 180) || '(leer)'));
   }
 }
 
@@ -68,7 +72,16 @@ async function geminiCall(model, userText, maxTokens) {
   }
   const data = await res.json();
   if (data?.promptFeedback?.blockReason) throw new Error('Gemini hat die Anfrage blockiert: ' + data.promptFeedback.blockReason);
-  return (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
+  const cand = data?.candidates?.[0];
+  const text = (cand?.content?.parts || []).map((p) => p.text || '').join('');
+  if (!text.trim()) {
+    const reason = cand?.finishReason || 'unbekannt';
+    const e = new Error(`Gemini leere Antwort (finishReason: ${reason})`);
+    // MAX_TOKENS -> mehr Tokens nötig; SAFETY/RECITATION -> Filter
+    e.status = reason === 'MAX_TOKENS' ? 'max_tokens' : 0;
+    throw e;
+  }
+  return text;
 }
 
 async function generateGemini(userText, maxTokens) {
