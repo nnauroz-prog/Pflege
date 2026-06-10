@@ -1,11 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
   "buildCommand": "npm run build --prefix client",
+  "outputDirectory": "client/dist",
   "functions": {
-    "api/index.js": { "maxDuration": 60, "includeFiles": "client/dist/**" }
+    "api/index.js": { "maxDuration": 60 }
   },
   "rewrites": [
-    { "source": "/(.*)", "destination": "/api" }
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
