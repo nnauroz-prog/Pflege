@@ -93,8 +93,8 @@ export default function App() {
 
       {!kiOk && (
         <div className="banner warn">
-          🔌 <b>KI noch nicht verbunden.</b> Du kannst die Eckdaten ausfüllen, aber zum Erstellen muss der
-          <code> ANTHROPIC_API_KEY</code> gesetzt sein.
+          🔌 <b>KI noch nicht verbunden.</b> Du kannst die Eckdaten ausfüllen, aber zum Erstellen muss ein KI-Schlüssel
+          gesetzt sein: <code>GEMINI_API_KEY</code> (kostenlos, ohne Karte) oder <code>ANTHROPIC_API_KEY</code>.
           {kiDetail && <div className="small" style={{ marginTop: 6, opacity: 0.85 }}>Diagnose: <code>{kiDetail}</code></div>}
         </div>
       )}

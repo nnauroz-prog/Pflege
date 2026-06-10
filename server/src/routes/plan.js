@@ -1,18 +1,18 @@
 import { Router } from 'express';
-import { generiereRueckfragen, generierePlan, kiVerfuegbar } from '../sis/claude.js';
+import { generiereRueckfragen, generierePlan, kiVerfuegbar, kiProvider } from '../sis/claude.js';
 import { THEMENFELDER } from '../sis/prompt.js';
 
 const router = Router();
 
 router.get('/status', (req, res) => {
-  res.json({ ki: kiVerfuegbar(), themenfelder: THEMENFELDER });
+  res.json({ ki: kiVerfuegbar(), provider: kiProvider(), themenfelder: THEMENFELDER });
 });
 
 function pruefeKi(res) {
   if (!kiVerfuegbar()) {
     res.status(503).json({
       error: 'KI nicht konfiguriert',
-      detail: 'Es ist kein ANTHROPIC_API_KEY gesetzt. Bitte den Key in den Umgebungsvariablen hinterlegen.',
+      detail: 'Kein KI-Schlüssel gesetzt. Setze GEMINI_API_KEY (kostenlos, ohne Karte) oder ANTHROPIC_API_KEY.',
     });
     return false;
   }

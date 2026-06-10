@@ -1,24 +1,21 @@
+// KI-Schicht mit mehreren Anbietern:
+//  - GEMINI_API_KEY  -> Google Gemini (KOSTENLOSER Tarif, keine Karte/kein Guthaben)
+//  - ANTHROPIC_API_KEY -> Claude (kostenpflichtig)
+// Es wird der erste vorhandene Schlüssel verwendet (Gemini bevorzugt = gratis).
 import Anthropic from '@anthropic-ai/sdk';
 import { SYSTEM_PROMPT, THEMENFELDER } from './prompt.js';
 
-// Modell per Env konfigurierbar; Default = aktuell stärkstes Modell.
-const MODEL = (process.env.CLAUDE_MODEL || 'claude-opus-4-8').trim();
-// Key defensiv bereinigen (Leerzeichen/Zeilenumbruch/Quotes vom Copy-&-Paste).
-const API_KEY = (process.env.ANTHROPIC_API_KEY || '').trim().replace(/^['"]|['"]$/g, '').trim();
+const clean = (v) => (v || '').trim().replace(/^['"]|['"]$/g, '').trim();
+const GEMINI_KEY = clean(process.env.GEMINI_API_KEY);
+const ANTHROPIC_KEY = clean(process.env.ANTHROPIC_API_KEY);
+const GEMINI_MODEL = clean(process.env.GEMINI_MODEL) || 'gemini-2.0-flash';
+const ANTHROPIC_MODEL = clean(process.env.CLAUDE_MODEL) || 'claude-opus-4-8';
 
 export function kiVerfuegbar() {
-  return !!API_KEY;
+  return !!(GEMINI_KEY || ANTHROPIC_KEY);
 }
-
-let _client;
-function client() {
-  if (!_client) _client = new Anthropic({ apiKey: API_KEY });
-  return _client;
-}
-
-// System-Prompt als cache-fähiger Block (Prompt-Caching spart Kosten über beide Aufrufe).
-function systemBlocks() {
-  return [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }];
+export function kiProvider() {
+  return GEMINI_KEY ? `gemini (${GEMINI_MODEL})` : ANTHROPIC_KEY ? `anthropic (${ANTHROPIC_MODEL})` : null;
 }
 
 function intakeText(stammdaten = {}, freitext = '') {
@@ -28,7 +25,7 @@ function intakeText(stammdaten = {}, freitext = '') {
   f('Alter', stammdaten.alter);
   f('Geschlecht', stammdaten.geschlecht);
   f('Pflegegrad', stammdaten.pflegegrad);
-  f('Versorgung', stammdaten.setting); // ambulant | stationär
+  f('Versorgung', stammdaten.setting);
   f('Wohnsituation', stammdaten.wohnsituation);
   f('Hauptdiagnosen', Array.isArray(stammdaten.diagnosen) ? stammdaten.diagnosen.join(', ') : stammdaten.diagnosen);
   f('Hilfsmittel', stammdaten.hilfsmittel);
@@ -37,43 +34,69 @@ function intakeText(stammdaten = {}, freitext = '') {
   return z.join('\n') || '(noch keine Angaben)';
 }
 
-// Extrahiert das JSON aus der Modellantwort (robust gegen Markdown-Codeblöcke).
-function parseJson(message) {
-  let text = (message.content || [])
-    .filter((b) => b.type === 'text')
-    .map((b) => b.text)
-    .join('')
-    .trim();
-  // ```json ... ``` entfernen, falls vorhanden
-  text = text.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+function parseJson(text) {
+  let t = (text || '').trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
   try {
-    return JSON.parse(text);
+    return JSON.parse(t);
   } catch {
-    const m = text.match(/\{[\s\S]*\}/);
+    const m = t.match(/\{[\s\S]*\}/);
     if (m) return JSON.parse(m[0]);
     throw new Error('KI-Antwort war kein gültiges JSON');
   }
 }
 
-// Phase 1: gezielte Rückfragen aus minimalen Eckdaten.
+// --- Anbieter ---
+async function generateGemini(userText, maxTokens) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_KEY)}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      contents: [{ role: 'user', parts: [{ text: userText }] }],
+      generationConfig: { responseMimeType: 'application/json', maxOutputTokens: maxTokens, temperature: 0.4 },
+    }),
+    signal: AbortSignal.timeout(55000),
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error(`Gemini ${res.status}: ${t.slice(0, 300)}`);
+  }
+  const data = await res.json();
+  if (data?.promptFeedback?.blockReason) throw new Error('Gemini hat die Anfrage blockiert: ' + data.promptFeedback.blockReason);
+  return (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
+}
+
+let _anthropic;
+async function generateAnthropic(userText, maxTokens) {
+  if (!_anthropic) _anthropic = new Anthropic({ apiKey: ANTHROPIC_KEY });
+  const msg = await _anthropic.messages.create({
+    model: ANTHROPIC_MODEL,
+    max_tokens: maxTokens,
+    thinking: { type: 'disabled' },
+    system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+    messages: [{ role: 'user', content: userText + '\n\nAntworte AUSSCHLIESSLICH mit gültigem JSON.' }],
+  });
+  return (msg.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
+}
+
+async function generate(userText, maxTokens) {
+  if (!kiVerfuegbar()) throw new Error('Kein KI-Schlüssel gesetzt (GEMINI_API_KEY oder ANTHROPIC_API_KEY).');
+  const raw = GEMINI_KEY ? await generateGemini(userText, maxTokens) : await generateAnthropic(userText, maxTokens);
+  return parseJson(raw);
+}
+
+// Phase 1: gezielte Rückfragen.
 export async function generiereRueckfragen({ stammdaten, freitext }) {
   const user = `Hier sind die bisher bekannten Eckdaten zur pflegebedürftigen Person:
 
 ${intakeText(stammdaten, freitext)}
 
-Erstelle 5–8 GEZIELTE, kurze Rückfragen, deren Antworten du brauchst, um eine vollständige SIS und einen Maßnahmenplan zu erstellen. Frage nur nach dem, was wirklich fehlt und fachlich relevant ist (orientiert an den 6 Themenfeldern und den genannten Diagnosen). Jede Frage knapp und konkret beantwortbar.
+Erstelle 5–8 GEZIELTE, kurze Rückfragen, deren Antworten du brauchst, um eine vollständige SIS und einen Maßnahmenplan zu erstellen. Frage nur nach fachlich Relevantem (orientiert an den 6 Themenfeldern und den Diagnosen).
 
-Antworte AUSSCHLIESSLICH mit gültigem JSON (kein Markdown, keine Erklärung) in genau dieser Form:
+Antworte AUSSCHLIESSLICH mit gültigem JSON in genau dieser Form:
 {"rueckfragen":[{"frage":"...","themenfeld":"...","warum":"..."}]}`;
-
-  const msg = await client().messages.create({
-    model: MODEL,
-    max_tokens: 2000,
-    thinking: { type: 'disabled' },
-    system: systemBlocks(),
-    messages: [{ role: 'user', content: user }],
-  });
-  return parseJson(msg);
+  return generate(user, 2000);
 }
 
 // Phase 2: vollständige SIS + Risikomatrix + Maßnahmenplan.
@@ -88,20 +111,13 @@ ${intakeText(stammdaten, freitext)}
 ANTWORTEN AUF RÜCKFRAGEN:
 ${antwortenText}
 
-Erstelle daraus die vollständige Dokumentation nach dem Strukturmodell: SIS über alle 6 Themenfelder (mit Ressourcen und Problemen/Risiken), eine Risikomatrix und einen konkreten, überprüfbaren Maßnahmenplan, plus eine kompakte Übergabe-Kurzfassung. Kurz und präzise. Wo Angaben fehlen, nenne offene Punkte unter "hinweise".
+Erstelle die vollständige Dokumentation nach dem Strukturmodell: SIS über alle 6 Themenfelder (mit Ressourcen und Problemen/Risiken), eine Risikomatrix und einen konkreten, überprüfbaren Maßnahmenplan, plus eine kompakte Übergabe-Kurzfassung. Kurz und präzise. Wo Angaben fehlen, nenne offene Punkte unter "hinweise".
 
 Die 6 Themenfelder (genau diese Namen für "feld" verwenden): ${THEMENFELDER.map((t) => `"${t}"`).join(', ')}.
 
-Antworte AUSSCHLIESSLICH mit gültigem JSON (kein Markdown, keine Erklärung) in genau dieser Form:
+Antworte AUSSCHLIESSLICH mit gültigem JSON in genau dieser Form:
 {"sicht_des_pflegebeduerftigen":"...","themenfelder":[{"feld":"<eines der 6 Themenfelder>","informationssammlung":"...","ressourcen":"...","probleme_und_risiken":"..."}],"risikomatrix":[{"risiko":"...","einschaetzung":"kein|niedrig|mittel|hoch","begruendung":"...","massnahme":"..."}],"massnahmenplan":[{"thema":"...","ziel":"...","massnahmen":["..."],"haeufigkeit":"...","evaluation":"..."}],"kurzfassung_uebergabe":"...","hinweise":["..."]}`;
 
-  const stream = client().messages.stream({
-    model: MODEL,
-    max_tokens: 8000,
-    thinking: { type: 'disabled' },
-    system: systemBlocks(),
-    messages: [{ role: 'user', content: user }],
-  });
-  const msg = await stream.finalMessage();
-  return { plan: parseJson(msg), modell: MODEL, usage: msg.usage };
+  const plan = await generate(user, 8000);
+  return { plan, provider: kiProvider() };
 }
