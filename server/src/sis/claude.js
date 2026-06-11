@@ -85,8 +85,9 @@ async function geminiCall(model, userText, maxTokens) {
 }
 
 async function generateGemini(userText, maxTokens) {
-  // Mehrere kostenlose Modelle (jeweils eigene Quote) + Wiederholung bei 429/503.
-  const models = [...new Set([GEMINI_MODEL, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'])];
+  // Kostenlose, JSON-zuverlässige Modelle (KEIN 2.5-flash: dessen Thinking-Tokens
+  // fressen das Output-Budget -> leeres/abgeschnittenes JSON). Eigene Quoten je Modell.
+  const models = [...new Set([GEMINI_MODEL, 'gemini-2.0-flash', 'gemini-1.5-flash'])];
   let lastErr;
   for (const model of models) {
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -98,7 +99,7 @@ async function generateGemini(userText, maxTokens) {
           await sleep(1200 * (attempt + 1));
           continue;
         }
-        break; // anderes Problem -> nächstes Modell probieren
+        break; // anderes Problem (inkl. max_tokens) -> nächstes Modell probieren
       }
     }
   }
@@ -153,7 +154,7 @@ Erstelle die vollständige Dokumentation nach dem Strukturmodell: SIS über alle
 
 Die 6 Themenfelder (genau diese Namen für "feld" verwenden): ${THEMENFELDER.map((t) => `"${t}"`).join(', ')}.
 
-Antworte AUSSCHLIESSLICH mit gültigem JSON in genau dieser Form:
+Antworte AUSSCHLIESSLICH mit gültigem JSON in genau dieser Form (halte alle Textwerte KURZ – Stichworte oder 1–2 Sätze, damit die Antwort vollständig bleibt):
 {"sicht_des_pflegebeduerftigen":"...","themenfelder":[{"feld":"<eines der 6 Themenfelder>","informationssammlung":"...","ressourcen":"...","probleme_und_risiken":"..."}],"risikomatrix":[{"risiko":"...","einschaetzung":"kein|niedrig|mittel|hoch","begruendung":"...","massnahme":"..."}],"massnahmenplan":[{"thema":"...","ziel":"...","massnahmen":["..."],"haeufigkeit":"...","evaluation":"..."}],"kurzfassung_uebergabe":"...","hinweise":["..."]}`;
 
   const plan = await generate(user, 8000);
